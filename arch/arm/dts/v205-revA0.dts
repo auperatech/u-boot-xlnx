@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * dts file for Xilinx ZynqMP ZCU106
+ * dts file for Xilinx ZynqMP Aupera V205 revA0
  *
  * (C) Copyright 2016, Xilinx, Inc.
  *
@@ -17,8 +17,8 @@
 #include <dt-bindings/phy/phy.h>
 
 / {
-	model = "ZynqMP ZCU106 RevA";
-	compatible = "xlnx,zynqmp-zcu106-revA", "xlnx,zynqmp-zcu106", "xlnx,zynqmp";
+	model = "ZynqMP V205 RevA0";
+	compatible = "xlnx,zynqmp";
 
 	aliases {
 		ethernet0 = &gem3;
@@ -69,7 +69,7 @@
 };
 
 &can1 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_can1_default>;
 };
@@ -113,15 +113,10 @@
 &gem3 {
 	status = "okay";
 	phy-handle = <&phy0>;
-	phy-mode = "rgmii-id";
+	phy-mode = "sgmii";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_gem3_default>;
 	phy0: phy@c {
-		reg = <0xc>;
-		ti,rx-internal-delay = <0x8>;
-		ti,tx-internal-delay = <0xa>;
-		ti,fifo-depth = <0x1>;
-		ti,rxctrl-strap-worka;
 	};
 };
 
@@ -666,27 +661,13 @@
 			io-standard = <IO_STANDARD_LVCMOS18>;
 		};
 
-		conf-rx {
-			pins = "MIO70", "MIO71", "MIO72", "MIO73", "MIO74",
-									"MIO75";
-			bias-high-impedance;
-			low-power-disable;
-		};
-
-		conf-tx {
-			pins = "MIO64", "MIO65", "MIO66", "MIO67", "MIO68",
-									"MIO69";
-			bias-disable;
-			low-power-enable;
-		};
-
 		mux-mdio {
-			function = "mdio3";
-			groups = "mdio3_0_grp";
+			function = "mdio2";
+			groups = "mdio2_0_grp";
 		};
 
 		conf-mdio {
-			groups = "mdio3_0_grp";
+			groups = "mdio2_0_grp";
 			slew-rate = <SLEW_RATE_SLOW>;
 			io-standard = <IO_STANDARD_LVCMOS18>;
 			bias-disable;
@@ -867,7 +848,7 @@
 
 /* ULPI SMSC USB3320 */
 &usb0 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usb0_default>;
 };
