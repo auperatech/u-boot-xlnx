@@ -854,6 +854,8 @@ static int mv88e61xx_probe(struct phy_device *phydev)
 	struct mv88e61xx_phy_priv *priv;
 	int res;
 
+	printf("[%s] phydev.  bus=%d, addr=%d\n", __FUNCTION__, phydev->bus, phydev->addr);
+
 	res = mv88e61xx_hw_reset(phydev);
 	if (res < 0)
 		return res;
@@ -903,6 +905,8 @@ static int mv88e61xx_probe(struct phy_device *phydev)
 	phydev->priv = priv;
 
 	priv->id = mv88e61xx_get_switch_id(phydev);
+
+	printf("[%s] priv->id=%d\n", __FUNCTION__, priv->id);
 
 	return 0;
 }

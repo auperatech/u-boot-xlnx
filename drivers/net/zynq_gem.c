@@ -698,9 +698,11 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 
 	priv->phy_of_handle = fdtdec_lookup_phandle(gd->fdt_blob, node,
 						    "phy-handle");
-	if (priv->phy_of_handle > 0)
+	if (priv->phy_of_handle > 0){
 		priv->phyaddr = fdtdec_get_int(gd->fdt_blob,
 					priv->phy_of_handle, "reg", -1);
+		printf("[%s] priv->phyaddr=%d\n", __FUNCTION__, priv->phyaddr);
+	}
 
 	phy_mode = fdt_getprop(gd->fdt_blob, node, "phy-mode", NULL);
 	if (phy_mode)
