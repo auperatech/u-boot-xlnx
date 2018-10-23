@@ -245,7 +245,8 @@ int genphy_update_link(struct phy_device *phydev)
 			/*
 			 * Timeout reached ?
 			 */
-			if (i > PHY_ANEG_TIMEOUT) {
+			/* aupera modify xilinx default auto-nego timeout from 200000 to 2000 for boot speed, we use fixed link// if (i > PHY_ANEG_TIMEOUT) { */
+			if (i > 2000) {
 				printf(" TIMEOUT !\n");
 				phydev->link = 0;
 				return -ETIMEDOUT;
