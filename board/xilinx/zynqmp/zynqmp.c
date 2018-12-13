@@ -227,6 +227,32 @@ int chip_id(unsigned char id)
 	return val;
 }
 
+void print_detail_chip_id()
+{
+	struct pt_regs regs;
+	int val = -EINVAL;
+
+	if (current_el() != 3) {
+		regs.regs[0] = ZYNQMP_SIP_SVC_CSU_DMA_CHIPID;
+		regs.regs[1] = 0;
+		regs.regs[2] = 0;
+		regs.regs[3] = 0;
+
+		smc_call(&regs);
+
+		/*
+		 * SMC returns:
+		 * regs[0][31:0]  = status of the operation
+		 * regs[0][63:32] = CSU.IDCODE register
+		 * regs[1][31:0]  = CSU.version register
+		 * regs[1][63:32] = CSU.IDCODE2 register
+		 */
+		printf("detail CSU.IDCODE:0x%08x,",  upper_32_bits(regs.regs[0]));
+		printf(" CSU.version:0x%08x,", lower_32_bits(regs.regs[1]));
+		printf(" CSU.IDCODE2:0x%08x\n",  (upper_32_bits(regs.regs[1])>>32));
+	}
+}
+
 #define ZYNQMP_VERSION_SIZE		9
 #define ZYNQMP_PL_STATUS_BIT		9
 #define ZYNQMP_PL_STATUS_MASK		BIT(ZYNQMP_PL_STATUS_BIT)
@@ -296,6 +322,7 @@ int board_init(void)
 	if (current_el() != 3) {
 		zynqmppl.name = zynqmp_get_silicon_idcode_name();
 		printf("Chip ID:\t%s\n", zynqmppl.name);
+		print_detail_chip_id();
 		fpga_init();
 		fpga_add(fpga_xilinx, &zynqmppl);
 	}
