@@ -228,6 +228,7 @@ int chip_id(unsigned char id)
 }
 
 extern int do_eeprom_chipid_write(uint i2c_addr, ulong offset, uchar value);
+extern int do_eeprom_chipid_read(uint i2c_addr, ulong offset, uchar &value);
 
 void print_detail_chip_id()
 {
@@ -257,17 +258,27 @@ void print_detail_chip_id()
 
         	/* Write to EEPROM */
                 for (i = 0; i < 4; i++) {
-			value =  upper_32_bits(regs.regs[0]);
-			do_eeprom_chipid_write(0x50, 0x80 + i, 
-                                           (value >> (i * 8)) & 0xFF);
+                        unsigned char tmp;
+                        unsigned char ntmp;
 
+                        do_eeprom_chipid_read(0x50, 0x14, &tmp);
+			value = upper_32_bits(regs.regs[0]);
+                        ntmp = (value >> (i * 8)) & 0xFF;
+                        if (ntmp != tmp)
+			    do_eeprom_chipid_write(0x50, 0x14 + i, ntmp);
+
+                        do_eeprom_chipid_read(0x50, 0x18, &tmp);
 			value = lower_32_bits(regs.regs[1]);
-			do_eeprom_chipid_write(0x50, 0x84 + i, 
-                                           (value >> (i * 8)) & 0xFF);
+                        ntmp = (value >> (i * 8)) & 0xFF;
+                        if (ntmp != tmp)
+			    do_eeprom_chipid_write(0x50, 0x18 + i, ntmp);
 
+                        do_eeprom_chipid_read(0x50, 0x1c, &tmp);
 			value = (upper_32_bits(regs.regs[1])>>32);
-			do_eeprom_chipid_write(0x50, 0x88 + i, 
-                                           (value >> (i * 8)) & 0xFF);
+                        ntmp = (value >> (i * 8)) & 0xFF;
+                        if (ntmp != tmp)
+			    do_eeprom_chipid_write(0x50, 0x1C + i, ntmp);
+
 		}
 	}
 }
