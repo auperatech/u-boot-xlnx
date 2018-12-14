@@ -228,7 +228,7 @@ int chip_id(unsigned char id)
 }
 
 extern int do_eeprom_chipid_write(uint i2c_addr, ulong offset, uchar value);
-extern int do_eeprom_chipid_read(uint i2c_addr, ulong offset, uchar &value);
+extern int do_eeprom_chipid_read(uint i2c_addr, ulong offset, uchar *value);
 
 void print_detail_chip_id()
 {

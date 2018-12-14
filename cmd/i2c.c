@@ -707,7 +707,7 @@ int do_eeprom_chipid_write(uint i2c_addr, ulong offset, uchar value)
     return 0;
 }
 
-int do_eeprom_chipid_read(uint i2c_addr, ulong offset, uchar &value)
+int do_eeprom_chipid_read(uint i2c_addr, ulong offset, uchar *value)
 {
     i2c_read(i2c_addr, offset, 1, &value, 1);
 
