@@ -227,10 +227,14 @@ int chip_id(unsigned char id)
 	return val;
 }
 
+extern int do_eeprom_chipid_write(uint i2c_addr, ulong offset, uchar value);
+
 void print_detail_chip_id()
 {
 	struct pt_regs regs;
 	int val = -EINVAL;
+	int i;
+        unsigned int value;
 
 	if (current_el() != 3) {
 		regs.regs[0] = ZYNQMP_SIP_SVC_CSU_DMA_CHIPID;
@@ -247,9 +251,24 @@ void print_detail_chip_id()
 		 * regs[1][31:0]  = CSU.version register
 		 * regs[1][63:32] = CSU.IDCODE2 register
 		 */
-		printf("detail CSU.IDCODE:0x%08x,",  upper_32_bits(regs.regs[0]));
+		printf("Detail CSU.IDCODE:0x%08x,",  upper_32_bits(regs.regs[0]));
 		printf(" CSU.version:0x%08x,", lower_32_bits(regs.regs[1]));
 		printf(" CSU.IDCODE2:0x%08x\n",  (upper_32_bits(regs.regs[1])>>32));
+
+        	/* Write to EEPROM */
+                for (i = 0; i < 4; i++) {
+			value =  upper_32_bits(regs.regs[0]);
+			do_eeprom_chipid_write(0x50, 0x80 + i, 
+                                           (value >> (i * 8)) & 0xFF);
+
+			value = lower_32_bits(regs.regs[1]);
+			do_eeprom_chipid_write(0x50, 0x84 + i, 
+                                           (value >> (i * 8)) & 0xFF);
+
+			value = (upper_32_bits(regs.regs[1])>>32);
+			do_eeprom_chipid_write(0x50, 0x88 + i, 
+                                           (value >> (i * 8)) & 0xFF);
+		}
 	}
 }
 

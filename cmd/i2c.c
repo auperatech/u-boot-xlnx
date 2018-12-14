@@ -700,6 +700,14 @@ static int do_i2c_mw ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	return 0;
 }
 
+int do_eeprom_chipid_write(uint i2c_addr, ulong offset, uchar value)
+{
+    i2c_write(i2c_addr, offset, 1, &value, 1);
+
+    return 0;
+}
+
+
 /**
  * do_i2c_crc() - Handle the "i2c crc32" command-line command
  * @cmdtp:	Command data struct pointer
