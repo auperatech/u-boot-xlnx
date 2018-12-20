@@ -59,6 +59,10 @@ void main_loop(void)
 	update_tftp(0UL, NULL, NULL);
 #endif /* CONFIG_UPDATE_TFTP */
 
+//#ifdef CONFIG_V205_HW_RST_88E6185
+	run_command("echo reset 88e6185;gpio clear 72;sleep 1;gpio set 72;echo release 88e6185;", 0);
+//#endif
+
 	s = bootdelay_process();
 	if (cli_process_fdt(&s))
 		cli_secure_boot_cmd(s);
