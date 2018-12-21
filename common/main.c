@@ -63,6 +63,9 @@ void main_loop(void)
 	run_command("echo reset 88e6185;gpio clear 72;sleep 1;gpio set 72;echo release 88e6185;", 0);
 //#endif
 
+//#ifdef CONFIG_V205_WORKAROUND_PETA2018_3_UBOOTENV
+	run_command("if test \"${modeboot}\" = \"sdboot\"; then setenv sdboot \"mmc dev 1 && mmcinfo && load mmc 1:1 0x10000000 image.ub && bootm 0x10000000\"; fi;", 0);
+//#endif
 	s = bootdelay_process();
 	if (cli_process_fdt(&s))
 		cli_secure_boot_cmd(s);
