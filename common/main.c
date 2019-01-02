@@ -64,7 +64,7 @@ void main_loop(void)
 //#endif
 
 //#ifdef CONFIG_V205_WORKAROUND_PETA2018_3_UBOOTENV
-	printf("notice: hardcode workaround for 2018.3 uboot env different from 2018.2");
+	printf("notice: hardcode workaround for 2018.3 uboot env different from 2018.2\n");
 	run_command("if test \"${modeboot}\" = \"sdboot\"; then setenv sdboot \"mmc dev 1 && mmcinfo && load mmc 1:1 0x10000000 image.ub && bootm 0x10000000\"; fi;", 0);
 	run_command("if test \"${modeboot}\" = \"qspiboot\"; then setenv qspiboot \"sf probe && sf read 0x10000000 0x1000000 0x2fe0000 && bootm 0x10000000\"; fi;", 0);
 //#endif

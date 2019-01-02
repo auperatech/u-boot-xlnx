@@ -104,6 +104,31 @@
 #define MIIM_88E151x_MODE_SGMII		1
 #define MIIM_88E151x_RESET_OFFS		15
 
+static int m88e1xxx_phy_extread(struct phy_device *phydev, int addr,
+				int devaddr, int regnum)
+{
+	int oldpage = phy_read(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE);
+	int val;
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE, devaddr);
+	val = phy_read(phydev, MDIO_DEVAD_NONE, regnum);
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE, oldpage);
+
+	return val;
+}
+
+static int m88e1xxx_phy_extwrite(struct phy_device *phydev, int addr,
+				 int devaddr, int regnum, u16 val)
+{
+	int oldpage = phy_read(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE, devaddr);
+	phy_write(phydev, MDIO_DEVAD_NONE, regnum, val);
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE, oldpage);
+
+	return 0;
+}
+
 /* Marvell 88E1011S */
 static int m88e1011s_config(struct phy_device *phydev)
 {
@@ -591,6 +616,91 @@ static int m88e1680_config(struct phy_device *phydev)
 	return 0;
 }
 
+static int m88e1112_1000baseX_config(struct phy_device *phydev)
+{
+	int reg;
+
+	if (phydev->interface == PHY_INTERFACE_MODE_SGMII) {	//for aupera v205, we have only sgmii to 1000basex, no-copper
+		/*88e1112 page2, reg16=mac specific control, bit 9:7=mode_select 111=sgmii to 1000baseX only*/
+		reg = m88e1xxx_phy_extread(phydev, MDIO_DEVAD_NONE, 2, 16);
+		reg |= 0x0380;
+		m88e1xxx_phy_extwrite(phydev, MDIO_DEVAD_NONE, 2, 16, reg);
+	}
+
+	/* soft reset */
+	phy_reset(phydev);
+
+	/*1000baseX no auto nego*/
+	phydev->autoneg = AUTONEG_DISABLE;
+	phydev->speed = SPEED_1000;
+	phydev->duplex = DUPLEX_FULL;
+
+	genphy_config_aneg(phydev);
+	//genphy_restart_aneg(phydev);
+
+	return 0;
+}
+
+/* Parse the 88E1112's status register for fabric 1000baseX speed and duplex
+ * information
+ */
+static int m88e1112_1000baseX_parse_status(struct phy_device *phydev)
+{
+	unsigned int speed;
+	unsigned int mii_reg;
+
+	mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_88E1xxx_PHY_STATUS);
+
+	if ((mii_reg & MIIM_88E1xxx_PHYSTAT_LINK) &&
+		!(mii_reg & MIIM_88E1xxx_PHYSTAT_SPDDONE)) {
+		int i = 0;
+
+		puts("Waiting for PHY realtime link");
+		while (!(mii_reg & MIIM_88E1xxx_PHYSTAT_SPDDONE)) {
+			/* Timeout reached ? */
+			if (i > PHY_AUTONEGOTIATE_TIMEOUT) {
+				puts(" TIMEOUT !\n");
+				phydev->link = 0;
+				return -ETIMEDOUT;
+			}
+
+			if ((i++ % 1000) == 0)
+				putc('.');
+			udelay(1000);
+			mii_reg = phy_read(phydev, MDIO_DEVAD_NONE,
+					MIIM_88E1xxx_PHY_STATUS);
+		}
+		puts(" done\n");
+		udelay(500000);	/* another 500 ms (results in faster booting) */
+	}
+
+	mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_88E1xxx_PHY_STATUS);
+
+	if (mii_reg & MIIM_88E1xxx_PHYSTAT_LINK){
+		phydev->link = 1;
+		phydev->speed = SPEED_1000;
+		if (mii_reg & MIIM_88E1xxx_PHYSTAT_DUPLEX)
+			phydev->duplex = DUPLEX_FULL;
+		else
+			phydev->duplex = DUPLEX_HALF;
+	}else{
+		phydev->link = 0;
+	}
+
+	return 0;
+}
+
+static int m88e1112_1000baseX_startup(struct phy_device *phydev)
+{
+	//int ret;
+
+	//ret = genphy_update_link(phydev);
+	//if (ret)
+	//	return ret;
+
+	return m88e1112_1000baseX_parse_status(phydev);
+}
+
 static struct phy_driver M88E1011S_driver = {
 	.name = "Marvell 88E1011S",
 	.uid = 0x1410c60,
@@ -669,6 +779,8 @@ static struct phy_driver M88E1510_driver = {
 	.config = &m88e1510_config,
 	.startup = &m88e1011s_startup,
 	.shutdown = &genphy_shutdown,
+	.readext = &m88e1xxx_phy_extread,
+	.writeext = &m88e1xxx_phy_extwrite,
 };
 
 /*
@@ -684,6 +796,8 @@ static struct phy_driver M88E1518_driver = {
 	.config = &m88e1518_config,
 	.startup = &m88e1011s_startup,
 	.shutdown = &genphy_shutdown,
+	.readext = &m88e1xxx_phy_extread,
+	.writeext = &m88e1xxx_phy_extwrite,
 };
 
 static struct phy_driver M88E1310_driver = {
@@ -706,6 +820,18 @@ static struct phy_driver M88E1680_driver = {
 	.shutdown = &genphy_shutdown,
 };
 
+static struct phy_driver M88E1112_1000baseX_driver = {
+	.name = "Marvell 88E1112",
+	.uid = 0x1410c90,
+	.mask = 0xffffff0,
+	.features = PHY_GBIT_FEATURES,
+	.config = &m88e1112_1000baseX_config,
+	.startup = &m88e1112_1000baseX_startup,
+	.shutdown = &genphy_shutdown,
+	.readext = &m88e1xxx_phy_extread,
+	.writeext = &m88e1xxx_phy_extwrite,
+};
+
 int phy_marvell_init(void)
 {
 	phy_register(&M88E1310_driver);
@@ -715,6 +841,7 @@ int phy_marvell_init(void)
 	phy_register(&M88E1118_driver);
 	phy_register(&M88E1118R_driver);
 	phy_register(&M88E1111S_driver);
+	phy_register(&M88E1112_1000baseX_driver);
 	phy_register(&M88E1011S_driver);
 	phy_register(&M88E1510_driver);
 	phy_register(&M88E1518_driver);

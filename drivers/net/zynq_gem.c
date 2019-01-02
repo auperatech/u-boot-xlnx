@@ -489,6 +489,8 @@ static int zynq_gem_init(struct udevice *dev)
 	 * Set SGMII enable PCS selection only if internal PCS/PMA
 	 * core is used and interface is SGMII.
 	 */
+	printf("zynq_gem priv: interface=%d, int_pcs=%d, phyaddr=%d, link=%d, autoneg=%d, speed=%d, duplex=%d\n", priv->interface, priv->int_pcs, priv->phyaddr, priv->phydev->link, priv->phydev->autoneg, priv->phydev->speed, priv->phydev->duplex);
+
 	if (priv->interface == PHY_INTERFACE_MODE_SGMII &&
 	    priv->int_pcs) {
 		nwconfig |= ZYNQ_GEM_NWCFG_SGMII_ENBL |
