@@ -785,8 +785,8 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 	priv->int_pcs = fdtdec_get_bool(gd->fdt_blob, node,
 					"is-internal-pcspma");
 
-	printf("ZYNQ GEM: %lx, phyaddr %x, interface %s\n", (ulong)priv->iobase,
-	       priv->phyaddr, phy_string_for_interface(priv->interface));
+	printf("ZYNQ GEM: %lx, phyaddr %x, interface %s, max_speed %d, int_pcs %d \n", (ulong)priv->iobase,
+	       priv->phyaddr, phy_string_for_interface(priv->interface), priv->max_speed, priv->int_pcs);
 
 	return 0;
 }

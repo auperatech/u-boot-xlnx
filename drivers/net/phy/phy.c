@@ -239,8 +239,8 @@ int genphy_update_link(struct phy_device *phydev)
 	    !(mii_reg & BMSR_ANEGCOMPLETE)) {
 		int i = 0;
 
-		printf("%s Waiting for PHY auto negotiation to complete",
-			phydev->dev->name);
+		printf("%s Waiting for PHY %s auto negotiation to complete",
+				phydev->dev->name, phydev->drv->name);
 		while (!(mii_reg & BMSR_ANEGCOMPLETE)) {
 			/*
 			 * Timeout reached ?

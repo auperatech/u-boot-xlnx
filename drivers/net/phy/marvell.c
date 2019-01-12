@@ -616,27 +616,78 @@ static int m88e1680_config(struct phy_device *phydev)
 	return 0;
 }
 
+static int m88e1112_1000baseX_config_aneg(struct phy_device *phydev)
+{
+	u32 advertise;
+	int oldadv, adv, bmsr;
+	int err, changed = 0;
+	int ctl, result;
+
+	/* Only allow advertising what this PHY supports */
+	phydev->advertising &= phydev->supported;
+	advertise = phydev->advertising;
+
+	/* Setup standard advertisement */
+	adv = phy_read(phydev, MDIO_DEVAD_NONE, MII_ADVERTISE);
+	oldadv = adv;
+
+	if (adv < 0)
+		return adv;
+
+	adv &= ~(ADVERTISE_ALL);
+
+	if (advertise & ADVERTISE_1000XHALF)
+		adv |= ADVERTISE_1000XHALF;
+	if (advertise & ADVERTISE_1000XFULL)
+		adv |= ADVERTISE_1000XFULL;
+
+	if (adv != oldadv) {
+		//printf("[%s] re-write fiber auto nego from %x->%x\n", oldadv, adv);
+		err = phy_write(phydev, MDIO_DEVAD_NONE, MII_ADVERTISE, adv);
+		if (err < 0)
+			return err;
+		changed = 1;
+	}else{
+		;//printf("[%s] fiber auto nego was 0x%x\n", __FUNCTION__, oldadv);
+	}
+
+	ctl = phy_read(phydev, MDIO_DEVAD_NONE, MII_BMCR);
+
+	if (ctl < 0)
+		return ctl;
+
+	if (!(ctl & BMCR_ANENABLE) || (ctl & BMCR_ISOLATE))
+		result = 1; /* do restart aneg */
+
+	/* Only restart aneg if we are advertising something different than we were before.	 */
+	if (result > 0 || changed)
+		result = genphy_restart_aneg(phydev);
+
+	return result;
+}
+
 static int m88e1112_1000baseX_config(struct phy_device *phydev)
 {
 	int reg;
 
-	if (phydev->interface == PHY_INTERFACE_MODE_SGMII) {	//for aupera v205, we have only sgmii to 1000basex, no-copper
-		/*88e1112 page2, reg16=mac specific control, bit 9:7=mode_select 111=sgmii to 1000baseX only*/
-		reg = m88e1xxx_phy_extread(phydev, MDIO_DEVAD_NONE, 2, 16);
-		reg |= 0x0380;
-		m88e1xxx_phy_extwrite(phydev, MDIO_DEVAD_NONE, 2, 16, reg);
-	}
+	//if (phydev->interface == PHY_INTERFACE_MODE_SGMII) {	//for aupera v205, we have only sgmii to 1000basex, no-copper
+	/*88e1112 page2, reg16=mac specific control, bit 9:7=mode_select 111=sgmii to 1000baseX only*/
+	reg = m88e1xxx_phy_extread(phydev, MDIO_DEVAD_NONE, 2, 16);
+	reg |= 0x0380;
+	m88e1xxx_phy_extwrite(phydev, MDIO_DEVAD_NONE, 2, 16, reg);
+
+	/*1000baseX no auto nego*/
+	phydev->autoneg = AUTONEG_ENABLE;
+	phydev->speed = SPEED_1000;
+	phydev->duplex = DUPLEX_FULL;
+	phydev->supported   = ADVERTISE_1000XFULL | ADVERTISE_1000XHALF;	// | ADVERTISE_1000XPAUSE | ADVERTISE_1000XPSE_ASYM;
+	phydev->advertising = ADVERTISE_1000XFULL | ADVERTISE_1000XHALF;	// | ADVERTISE_1000XPAUSE | ADVERTISE_1000XPSE_ASYM;
 
 	/* soft reset */
 	phy_reset(phydev);
 
-	/*1000baseX no auto nego*/
-	phydev->autoneg = AUTONEG_DISABLE;
-	phydev->speed = SPEED_1000;
-	phydev->duplex = DUPLEX_FULL;
-
-	genphy_config_aneg(phydev);
-	//genphy_restart_aneg(phydev);
+	m88e1112_1000baseX_config_aneg(phydev);
+	genphy_restart_aneg(phydev);
 
 	return 0;
 }
@@ -655,7 +706,7 @@ static int m88e1112_1000baseX_parse_status(struct phy_device *phydev)
 		!(mii_reg & MIIM_88E1xxx_PHYSTAT_SPDDONE)) {
 		int i = 0;
 
-		puts("Waiting for PHY realtime link");
+		puts("Waiting for 88e1112 1000baseX realtime link");
 		while (!(mii_reg & MIIM_88E1xxx_PHYSTAT_SPDDONE)) {
 			/* Timeout reached ? */
 			if (i > PHY_AUTONEGOTIATE_TIMEOUT) {
@@ -664,14 +715,20 @@ static int m88e1112_1000baseX_parse_status(struct phy_device *phydev)
 				return -ETIMEDOUT;
 			}
 
-			if ((i++ % 1000) == 0)
-				putc('.');
+			if ((i++ % 1000) == 0) putc('.');
 			udelay(1000);
 			mii_reg = phy_read(phydev, MDIO_DEVAD_NONE,
 					MIIM_88E1xxx_PHY_STATUS);
+
+			if (mii_reg & MIIM_88E1xxx_PHYSTAT_LINK){
+				puts(" linked ");
+				break;
+			}
 		}
 		puts(" done\n");
 		udelay(500000);	/* another 500 ms (results in faster booting) */
+	}else{
+		;//printf("1st fabric_status=0x%x\n", mii_reg);
 	}
 
 	mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_88E1xxx_PHY_STATUS);
@@ -684,6 +741,7 @@ static int m88e1112_1000baseX_parse_status(struct phy_device *phydev)
 		else
 			phydev->duplex = DUPLEX_HALF;
 	}else{
+		printf("2nd fail fabric_status=0x%x\n", mii_reg);
 		phydev->link = 0;
 	}
 
@@ -692,11 +750,11 @@ static int m88e1112_1000baseX_parse_status(struct phy_device *phydev)
 
 static int m88e1112_1000baseX_startup(struct phy_device *phydev)
 {
-	//int ret;
+	int ret;
 
-	//ret = genphy_update_link(phydev);
-	//if (ret)
-	//	return ret;
+	ret = genphy_update_link(phydev);
+	if (ret)
+		return ret;
 
 	return m88e1112_1000baseX_parse_status(phydev);
 }
