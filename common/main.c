@@ -60,7 +60,7 @@ void main_loop(void)
 #endif /* CONFIG_UPDATE_TFTP */
 
 //#ifdef CONFIG_V205_HW_RST_88E6185
-	run_command("echo reset 88e6185;gpio clear 72;sleep 1;gpio set 72;echo release 88e6185;", 0);
+//	run_command("echo reset 88e6185;gpio clear 72;sleep 0.1;gpio set 72;sleep 1;echo release 88e6185;", 0); //moved to drivers/net/macb.c 
 //#endif
 
 //#ifdef CONFIG_V205_WORKAROUND_PETA2018_3_UBOOTENV

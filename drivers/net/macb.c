@@ -927,6 +927,18 @@ int macb_eth_initialize(int id, void *regs, unsigned int phy_addr)
 	eth_register(netdev);
 
 #if defined(CONFIG_CMD_MII) || defined(CONFIG_PHYLIB)
+	/** use gpio 72 reset 88e6185 or 88e1112, output 0=reset, 1=run, 
+		88e1112 have a reset-chip with 250ms reset delay, we will use dts to get gpio later */
+	static bool phy_hw_reseted = false;
+	if (! phy_hw_reseted){
+		gpio_direction_output(72, 0);
+		udelay(20*1000);        //20ms
+		gpio_direction_output(72, 1);
+		udelay(400*1000);       //400ms for reset-chip delay
+		printf("hardware gpio 72 reset phy!\n");
+		phy_hw_reseted = true;
+	}
+
 	int retval;
 	struct mii_dev *mdiodev = mdio_alloc();
 	if (!mdiodev)
