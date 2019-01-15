@@ -616,6 +616,46 @@ static int m88e1680_config(struct phy_device *phydev)
 	return 0;
 }
 
+/** copy form generic phy_reset, init with duplex bit */
+static int m88e1112_1000baseX_phy_reset(struct phy_device *phydev)
+{
+	int reg;
+	int timeout = 500;
+	int devad = MDIO_DEVAD_NONE;
+
+	if (phydev->flags & PHY_FLAG_BROKEN_RESET)
+		return 0;
+
+	if (phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR, (BMCR_RESET | BMCR_FULLDPLX | BMCR_ANENABLE))) {
+		debug("PHY 1112 reset failed\n");
+		return -1;
+	}
+
+	/*
+	 * Poll the control register for the reset bit to go to 0 (it is
+	 * auto-clearing).  This should happen within 0.5 seconds per the
+	 * IEEE spec.
+	 */
+	reg = phy_read(phydev, devad, MII_BMCR);
+	while ((reg & BMCR_RESET) && timeout--) {
+		reg = phy_read(phydev, devad, MII_BMCR);
+
+		if (reg < 0) {
+			debug("PHY 1112 status read failed\n");
+			return -1;
+		}
+		udelay(1000);
+	}
+
+	if (reg & BMCR_RESET) {
+		puts("PHY 1112 reset timed out\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static int m88e1112_1000baseX_config_aneg(struct phy_device *phydev)
 {
 	u32 advertise;
@@ -669,12 +709,18 @@ static int m88e1112_1000baseX_config_aneg(struct phy_device *phydev)
 static int m88e1112_1000baseX_config(struct phy_device *phydev)
 {
 	int reg;
+	int timeout = 500;
+
+	/* soft reset */
+	m88e1112_1000baseX_phy_reset(phydev);
 
 	//if (phydev->interface == PHY_INTERFACE_MODE_SGMII) {	//for aupera v205, we have only sgmii to 1000basex, no-copper
 	/*88e1112 page2, reg16=mac specific control, bit 9:7=mode_select 111=sgmii to 1000baseX only*/
 	reg = m88e1xxx_phy_extread(phydev, MDIO_DEVAD_NONE, 2, 16);
 	reg |= 0x0380;
 	m88e1xxx_phy_extwrite(phydev, MDIO_DEVAD_NONE, 2, 16, reg);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE, 1);	/*disable auto media register selection, fixed on fibber*/
 
 	/*1000baseX no auto nego*/
 	phydev->autoneg = AUTONEG_ENABLE;
@@ -683,8 +729,10 @@ static int m88e1112_1000baseX_config(struct phy_device *phydev)
 	phydev->supported   = ADVERTISE_1000XFULL | ADVERTISE_1000XHALF;	// | ADVERTISE_1000XPAUSE | ADVERTISE_1000XPSE_ASYM;
 	phydev->advertising = ADVERTISE_1000XFULL | ADVERTISE_1000XHALF;	// | ADVERTISE_1000XPAUSE | ADVERTISE_1000XPSE_ASYM;
 
+	udelay(1000);
+
 	/* soft reset */
-	phy_reset(phydev);
+	m88e1112_1000baseX_phy_reset(phydev);
 
 	m88e1112_1000baseX_config_aneg(phydev);
 	genphy_restart_aneg(phydev);
