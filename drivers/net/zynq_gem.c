@@ -759,6 +759,7 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 	struct zynq_gem_priv *priv = dev_get_priv(dev);
 	int node = dev_of_offset(dev);
 	const char *phy_mode;
+	int ret, gpio_phy_hw_rst;
 
 	pdata->iobase = (phys_addr_t)devfdt_get_addr(dev);
 	priv->iobase = (struct zynq_gem_regs *)pdata->iobase;
@@ -787,6 +788,26 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 
 	printf("ZYNQ GEM: %lx, phyaddr %x, interface %s, max_speed %d, int_pcs %d \n", (ulong)priv->iobase,
 	       priv->phyaddr, phy_string_for_interface(priv->interface), priv->max_speed, priv->int_pcs);
+
+	gpio_phy_hw_rst = 72;
+	/* grab the pin before we tweak it */
+	ret = gpio_request(gpio_phy_hw_rst, "cmd_gpio");
+	if (ret && ret != -EBUSY) {
+		printf("gpio: requesting pin %u failed\n", gpio_phy_hw_rst);
+		return -1;
+	}
+
+	/** use gpio 72 reset 88e6185 or 88e1112, output 0=reset, 1=run,
+		88e1112 have a reset-chip with 250ms reset delay, we will use dts to get gpio later */
+	static bool phy_hw_reseted = false;
+	if (! phy_hw_reseted){
+		gpio_direction_output(gpio_phy_hw_rst, 0);
+		udelay(100*1000);        //100ms
+		gpio_direction_output(gpio_phy_hw_rst, 1);
+		udelay(400*1000);       //400ms for reset-chip delay
+		printf("hardware gpio %d reset phy!\n", gpio_phy_hw_rst);
+		phy_hw_reseted = true;
+	}
 
 	return 0;
 }
