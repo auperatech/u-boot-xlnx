@@ -659,7 +659,7 @@ static int m88e1112_1000baseX_phy_reset(struct phy_device *phydev)
 static int m88e1112_1000baseX_config_aneg(struct phy_device *phydev)
 {
 	u32 advertise;
-	int oldadv, adv, bmsr;
+	int oldadv, adv;
 	int err, changed = 0;
 	int ctl, result;
 
@@ -709,7 +709,6 @@ static int m88e1112_1000baseX_config_aneg(struct phy_device *phydev)
 static int m88e1112_1000baseX_config(struct phy_device *phydev)
 {
 	int reg;
-	int timeout = 500;
 
 	/* soft reset */
 	m88e1112_1000baseX_phy_reset(phydev);
@@ -745,7 +744,6 @@ static int m88e1112_1000baseX_config(struct phy_device *phydev)
  */
 static int m88e1112_1000baseX_parse_status(struct phy_device *phydev)
 {
-	unsigned int speed;
 	unsigned int mii_reg;
 
 	mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_88E1xxx_PHY_STATUS);
