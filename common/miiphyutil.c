@@ -242,6 +242,8 @@ int miiphy_read(const char *devname, unsigned char addr, unsigned char reg,
 	if (!bus)
 		return 1;
 
+	printf("[%s] addr=%d, reg=%d, bus=0x%p, .read=0x%p \n", __FUNCTION__, addr, reg, bus, bus->read);
+
 	ret = bus->read(bus, addr, MDIO_DEVAD_NONE, reg);
 	if (ret < 0)
 		return 1;

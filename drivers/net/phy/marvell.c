@@ -333,7 +333,7 @@ static int m88e1518_config(struct phy_device *phydev)
 	 * As per Marvell Release Notes - Alaska 88E1510/88E1518/88E1512
 	 * /88E1514 Rev A0, Errata Section 3.1
 	 */
-
+	printf("call %s\n", __FUNCTION__);
 	/* EEE initialization */
 	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_88E1118_PHY_PAGE, 0x00ff);
 	phy_write(phydev, MDIO_DEVAD_NONE, 17, 0x214B);
@@ -938,6 +938,7 @@ static struct phy_driver M88E1112_1000baseX_driver = {
 
 int phy_marvell_init(void)
 {
+	printf("call %s\n", __FUNCTION__);
 	phy_register(&M88E1310_driver);
 	phy_register(&M88E1149S_driver);
 	phy_register(&M88E1145_driver);

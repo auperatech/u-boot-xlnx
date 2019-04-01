@@ -213,6 +213,7 @@ static u32 phy_setup_op(struct zynq_gem_priv *priv, u32 phy_addr, u32 regnum,
 	struct zynq_gem_regs *regs = priv->iobase;
 	int err;
 
+	debug("[%s] addr=%d, reg=%d, op=0x%x\n",__FUNCTION__, phy_addr, regnum, op);
 	err = wait_for_bit(__func__, &regs->nwsr, ZYNQ_GEM_NWSR_MDIOIDLE_MASK,
 			    true, 20000, false);
 	if (err)
@@ -246,8 +247,8 @@ static u32 phyread(struct zynq_gem_priv *priv, u32 phy_addr,
 			   ZYNQ_GEM_PHYMNTNC_OP_R_MASK, val);
 
 	if (!ret)
-		debug("%s: phy_addr %d, regnum 0x%x, val 0x%x\n", __func__,
-		      phy_addr, regnum, *val);
+		debug("%s: phy_addr %d, regnum 0x%x, val 0x%x, ret=%d\n", __func__,
+		      phy_addr, regnum, *val, ret);
 
 	return ret;
 }
@@ -331,6 +332,30 @@ static int zynq_gem_setup_mac(struct udevice *dev)
 	return 0;
 }
 
+static int mv88e6185_single_chip_early_init(struct mii_dev *bus)
+{
+	int swid;
+	int reg;
+	int time;
+	int physid1, physid2;
+
+	printf("call %s\n", __FUNCTION__);
+
+	physid1 = bus->read(bus, 0, -1, MII_PHYSID1);
+	physid2 = bus->read(bus, 0, -1, MII_PHYSID2);
+	swid = bus->read(bus, 0x16, -1, 0x3);
+
+	printf ("physid1=0x%x, physid2=0x%x, swid=0x%x\n", physid1, physid2, swid);
+	if (physid1==0x0141 && (physid2 & 0xfff0)==0x1a70 && (swid & 0xfff0)==0x1a70){
+		printf("found 88e6185 of single chip mode\n");
+	}else{
+		return 0;
+	}
+
+	return 0;
+
+}
+
 static int zynq_phy_init(struct udevice *dev)
 {
 	int ret;
@@ -357,9 +382,10 @@ static int zynq_phy_init(struct udevice *dev)
 
 	priv->phydev = phy_connect(priv->bus, priv->phyaddr, dev,
 				   priv->interface);
-	if (!priv->phydev)
+	if (!priv->phydev){
+		printf("[%s] phy_connect error\n", __FUNCTION__);
 		return -ENODEV;
-
+	}
 	priv->phydev->supported &= supported | ADVERTISED_Pause |
 				  ADVERTISED_Asym_Pause;
 	if (priv->max_speed) {
@@ -489,7 +515,7 @@ static int zynq_gem_init(struct udevice *dev)
 	 * Set SGMII enable PCS selection only if internal PCS/PMA
 	 * core is used and interface is SGMII.
 	 */
-	printf("zynq_gem priv: interface=%d, int_pcs=%d, phyaddr=%d, link=%d, autoneg=%d, speed=%d, duplex=%d\n", priv->interface, priv->int_pcs, priv->phyaddr, priv->phydev->link, priv->phydev->autoneg, priv->phydev->speed, priv->phydev->duplex);
+	printf("zynq_gem priv: interface=%d, phydev=@%p int_pcs=%d, phyaddr=%d, link=%d, autoneg=%d, speed=%d, duplex=%d\n", priv->interface, priv->phydev, priv->int_pcs, priv->phyaddr, priv->phydev->link, priv->phydev->autoneg, priv->phydev->speed, priv->phydev->duplex);
 
 	if (priv->interface == PHY_INTERFACE_MODE_SGMII &&
 	    priv->int_pcs) {
@@ -502,11 +528,6 @@ static int zynq_gem_init(struct udevice *dev)
 	}
 
 	switch (priv->phydev->speed) {
-	case SPEED_1000:
-		writel(nwconfig | ZYNQ_GEM_NWCFG_SPEED1000,
-		       &regs->nwcfg);
-		clk_rate = ZYNQ_GEM_FREQUENCY_1000;
-		break;
 	case SPEED_100:
 		writel(nwconfig | ZYNQ_GEM_NWCFG_SPEED100,
 		       &regs->nwcfg);
@@ -514,6 +535,12 @@ static int zynq_gem_init(struct udevice *dev)
 		break;
 	case SPEED_10:
 		clk_rate = ZYNQ_GEM_FREQUENCY_10;
+		break;
+	case SPEED_1000:
+	default:
+		writel(nwconfig | ZYNQ_GEM_NWCFG_SPEED1000,
+		       &regs->nwcfg);
+		clk_rate = ZYNQ_GEM_FREQUENCY_1000;
 		break;
 	}
 
@@ -682,7 +709,7 @@ static int zynq_gem_miiphy_read(struct mii_dev *bus, int addr,
 	u16 val;
 
 	ret = phyread(priv, addr, reg, &val);
-	debug("%s 0x%x, 0x%x, 0x%x, 0x%x\n", __func__, addr, reg, val, ret);
+	printf("[%s] addr=0x%x, reg=0x%x, val=0x%x, ret=0x%x\n", __func__, addr, reg, val, ret);
 	return val;
 }
 
@@ -691,7 +718,7 @@ static int zynq_gem_miiphy_write(struct mii_dev *bus, int addr, int devad,
 {
 	struct zynq_gem_priv *priv = bus->priv;
 
-	debug("%s 0x%x, 0x%x, 0x%x\n", __func__, addr, reg, value);
+	printf("[%s] addr=0x%x, reg=0x%x, val=0x%x\n", __func__, addr, reg, value);
 	return phywrite(priv, addr, reg, value);
 }
 
@@ -724,11 +751,12 @@ static int zynq_gem_probe(struct udevice *dev)
 	priv->bus->read = zynq_gem_miiphy_read;
 	priv->bus->write = zynq_gem_miiphy_write;
 	priv->bus->priv = priv;
+	printf("[%s] priv->iobase @0x%p, priv->bus @0x%p, .bus->read @0x%p, .bus->write 0x%p, .bus->priv 0x%p\n", __FUNCTION__, priv->iobase, priv->bus, priv->bus->read, priv->bus->write, priv->bus->priv);
 
 	ret = mdio_register_seq(priv->bus, dev->seq);
 	if (ret)
 		return ret;
-
+	debug("[%s] call zynq_phy_init\n", __FUNCTION__);
 	return zynq_phy_init(dev);
 }
 
@@ -786,7 +814,7 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 	priv->int_pcs = fdtdec_get_bool(gd->fdt_blob, node,
 					"is-internal-pcspma");
 
-	printf("ZYNQ GEM: %lx, phyaddr %x, interface %s, max_speed %d, int_pcs %d \n", (ulong)priv->iobase,
+	printf("\nZYNQ GEM: %lx, phyaddr %x, interface %s, max_speed %d, int_pcs %d \n", (ulong)priv->iobase,
 	       priv->phyaddr, phy_string_for_interface(priv->interface), priv->max_speed, priv->int_pcs);
 
 	gpio_phy_hw_rst = 72;
@@ -804,7 +832,7 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 		gpio_direction_output(gpio_phy_hw_rst, 0);
 		udelay(100*1000);        //100ms
 		gpio_direction_output(gpio_phy_hw_rst, 1);
-		udelay(400*1000);       //400ms for reset-chip delay
+		udelay(1000*1000);       //400ms for reset-chip delay
 		printf("hardware gpio %d reset phy!\n", gpio_phy_hw_rst);
 		phy_hw_reseted = true;
 	}

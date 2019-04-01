@@ -20,6 +20,8 @@ int fixedphy_probe(struct phy_device *phydev)
 	int ofnode = phydev->addr;
 	u32 val;
 
+	printf("call %s\n", __FUNCTION__);
+
 	/* check for mandatory properties within fixed-link node */
 	val = fdt_getprop_u32_default_node(gd->fdt_blob,
 					   ofnode, 0, "speed", 0);
@@ -43,6 +45,7 @@ int fixedphy_probe(struct phy_device *phydev)
 	/* fixed-link phy must not be reset by core phy code */
 	phydev->flags |= PHY_FLAG_BROKEN_RESET;
 
+	printf("[%s] speed=%d, duplex=%d\n", __FUNCTION__, priv->link_speed, priv->duplex);
 	return 0;
 }
 
@@ -76,6 +79,7 @@ static struct phy_driver fixedphy_driver = {
 
 int phy_fixed_init(void)
 {
+	printf("call %s\n", __FUNCTION__);
 	phy_register(&fixedphy_driver);
 	return 0;
 }

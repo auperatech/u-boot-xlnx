@@ -29,6 +29,9 @@ config MV88E61XX_FIXED_PORTS
 
 endif # MV88E61XX_SWITCH
 
+config MV88E6185_SWITCH_SINGLE_CHIP
+	bool "Marvel MV88E6185 Ethernet switch PHY support of single chip mode for aupera v205."
+
 config PHYLIB_10G
 	bool "Generic 10G PHY support"
 

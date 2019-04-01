@@ -527,6 +527,9 @@ int phy_init(void)
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
 	phy_xilinx_gmii2rgmii_init();
 #endif
+#ifdef CONFIG_MV88E6185_SWITCH_SINGLE_CHIP
+	phy_mv88e6185_single_chip_init();
+#endif
 	return 0;
 }
 
@@ -608,8 +611,10 @@ static struct phy_driver *get_phy_driver(struct phy_device *phydev,
 
 	list_for_each(entry, &phy_drivers) {
 		drv = list_entry(entry, struct phy_driver, list);
-		if ((drv->uid & drv->mask) == (phy_id & drv->mask))
+		if ((drv->uid & drv->mask) == (phy_id & drv->mask)){
+			printf("[%s] uid=0x%x, mask=0x%x, name=%s\n", __FUNCTION__, drv->uid, drv->mask, drv->name);
 			return drv;
+		}
 	}
 
 	/* If we made it here, there's no driver for this PHY */
@@ -621,7 +626,7 @@ static struct phy_device *phy_device_create(struct mii_dev *bus, int addr,
 					    phy_interface_t interface)
 {
 	struct phy_device *dev;
-
+	printf("[%s] bus=%p, addr=0x%x, phyid=0x%x\n", __FUNCTION__, bus, addr, phy_id);
 	/* We allocate the device, and initialize the
 	 * default values */
 	dev = malloc(sizeof(*dev));
@@ -688,10 +693,12 @@ int __weak get_phy_id(struct mii_dev *bus, int addr, int devad, u32 *phy_id)
 static struct phy_device *create_phy_by_mask(struct mii_dev *bus,
 		unsigned phy_mask, int devad, phy_interface_t interface)
 {
+	printf("[%s] bus=%p, phymask=0x%x\n", __FUNCTION__, bus, phy_mask);
 	u32 phy_id = 0xffffffff;
 	while (phy_mask) {
 		int addr = ffs(phy_mask) - 1;
 		int r = get_phy_id(bus, addr, devad, &phy_id);
+		printf("[%s] get_phy_id addr=0x%x, r=%d, phyid=0x%x\n", __FUNCTION__, addr, r, phy_id);
 		/* If the PHY ID is mostly f's, we didn't find anything */
 		if (r == 0 && (phy_id & 0x1fffffff) != 0x1fffffff)
 			return phy_device_create(bus, addr, phy_id, interface);
@@ -766,6 +773,7 @@ int phy_reset(struct phy_device *phydev)
 	int timeout = 500;
 	int devad = MDIO_DEVAD_NONE;
 
+	printf("[%s]\n", __FUNCTION__);
 	if (phydev->flags & PHY_FLAG_BROKEN_RESET)
 		return 0;
 
@@ -847,14 +855,16 @@ void phy_connect_dev(struct phy_device *phydev, struct eth_device *dev)
 #endif
 {
 	/* Soft Reset the PHY */
+	printf("[%s]\n", __FUNCTION__);
 	phy_reset(phydev);
+
 	if (phydev->dev && phydev->dev != dev) {
 		printf("%s:%d is connected to %s.  Reconnecting to %s\n",
 				phydev->bus->name, phydev->addr,
 				phydev->dev->name, dev->name);
 	}
 	phydev->dev = dev;
-	debug("%s connected to %s\n", dev->name, phydev->drv->name);
+	printf("%s connected to %s\n", dev->name, phydev->drv->name);
 }
 
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
@@ -908,6 +918,7 @@ static struct phy_device *phy_connect_fixed(struct mii_dev *bus,
 	const char *name;
 
 	sn = fdt_first_subnode(gd->fdt_blob, dev_of_offset(dev));
+	printf("[%s] sn=%d\n", __FUNCTION__, sn);
 	while (sn > 0) {
 		name = fdt_get_name(gd->fdt_blob, sn, NULL);
 		if (name != NULL && strcmp(name, "fixed-link") == 0) {
@@ -932,16 +943,19 @@ struct phy_device *phy_connect(struct mii_dev *bus, int addr,
 #endif
 {
 	struct phy_device *phydev = NULL;
-
+	printf("[%s] addr=%d\n", __FUNCTION__, addr);
 #ifdef CONFIG_PHY_FIXED
 	phydev = phy_connect_fixed(bus, dev, interface);
+	printf("have define CONFIG_PHY_FIXED, got phydev= 0x%p\n", phydev);
 #endif
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
 	phydev = phy_connect_gmii2rgmii(bus, dev, interface);
 #endif
 
-	if (phydev == NULL)
+	if (phydev == NULL){
+		printf("phy_find_by_mask, 0x%d\n", addr);
 		phydev = phy_find_by_mask(bus, 1 << addr, interface);
+	}
 
 	if (phydev)
 		phy_connect_dev(phydev, dev);
