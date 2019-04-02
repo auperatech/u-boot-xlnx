@@ -149,6 +149,34 @@ static int mv88e6185_single_probe(struct phy_device *phydev)
 	return 0;
 }
 
+static int mv88e6185_single_soft_reset(struct phy_device *phydev)
+{
+	int reg, i;
+	reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
+	if (reg < 0) return reg;
+	reg |= GLOBAL1_CTRL_SWRESET;
+	reg = mv88e6185_single_chip_write(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL, reg);
+	for (i=0; i<1000; i++) {
+		reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
+		if (reg >= 0 && ((reg & GLOBAL1_CTRL_SWRESET) == 0))	break;
+		udelay(1000);
+	}
+}
+
+static int mv88e6185_single_config_aneg(struct phy_device *phydev)
+{
+	/*1000baseX auto nego*/
+	phydev->autoneg = AUTONEG_DISABLE;
+	phydev->speed = SPEED_1000;
+	phydev->duplex = DUPLEX_FULL;
+	phydev->supported   = ADVERTISE_1000HALF | ADVERTISE_1000FULL;
+	phydev->advertising = ADVERTISE_1000HALF | ADVERTISE_1000FULL;
+	phydev->pause = 0;
+	phydev->asym_pause = 0;
+
+	return 0;
+}
+
 static int mv88e6185_single_config(struct phy_device *phydev)
 {
 	int swid;
@@ -164,15 +192,7 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 	}
 
 	/*soft reset*/
-	reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
-	if (reg < 0) return reg;
-	reg |= GLOBAL1_CTRL_SWRESET;
-	reg = mv88e6185_single_chip_write(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL, reg);
-	for (time = 1000; time; time--) {
-		reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
-		if (reg >= 0 && ((reg & GLOBAL1_CTRL_SWRESET) == 0))	break;
-		udelay(1000);
-	}
+	mv88e6185_single_soft_reset(phydev);
 
 	/*port 6/7/8/9 enable forwarding*/
 	mv88e6185_single_chip_write(phydev, 0x16, 0x4, 0x77);
@@ -233,15 +253,9 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 */
 
 	/*soft reset*/
-	reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
-	if (reg < 0) return reg;
-	reg |= GLOBAL1_CTRL_SWRESET;
-	reg = mv88e6185_single_chip_write(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL, reg);
-	for (time = 1000; time; time--) {
-		reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
-		if (reg >= 0 && ((reg & GLOBAL1_CTRL_SWRESET) == 0))	break;
-		udelay(1000);
-	}
+	mv88e6185_single_soft_reset(phydev);
+
+	mv88e6185_single_config_aneg(phydev);
 
 	return 0;
 }
@@ -249,8 +263,6 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 
 static int mv88e6185_single_update_link(struct phy_device *phydev)
 {
-	unsigned int speed;
-	unsigned int mii_reg;
 	int val;
 	int link = 0, link6 = 0, link7 = 0, link8 = 0, link9 = 0;
 
@@ -293,56 +305,8 @@ static int mv88e6185_single_update_link(struct phy_device *phydev)
 
 static int mv88e6185_single_startup(struct phy_device *phydev)
 {
-	int i;
-	int link = 0;
-	int res;
-	int speed = phydev->speed;
-	int duplex = phydev->duplex;
-	int link6 = 0, link7 = 0, link8 = 0, link9 = 0;
-	// port 6 is eth0=gem2, port 9 is eth1=gem3, normally we use eth0
-	// port 7 & 8 is uplink to dx3336
-
-	int val;
-
 	printf("call %s\n", __FUNCTION__);
-	val = mv88e6185_single_chip_read(phydev, 0x16, PORT_REG_STATUS);
-	if (val < 0) return 0;
-	link6 = (val & PORT_REG_STATUS_LINK) == 0;
-
-	val = mv88e6185_single_chip_read(phydev, 0x17, PORT_REG_STATUS);
-	if (val < 0) return 0;
-	link7 = (val & PORT_REG_STATUS_LINK) == 0;
-
-	val = mv88e6185_single_chip_read(phydev, 0x18, PORT_REG_STATUS);
-	if (val < 0) return 0;
-	link8 = (val & PORT_REG_STATUS_LINK) == 0;
-
-	val = mv88e6185_single_chip_read(phydev, 0x19, PORT_REG_STATUS);
-	if (val < 0) return 0;
-	link9 = (val & PORT_REG_STATUS_LINK) == 0;
-
-	printf("[%s] port=%d, link 6/7/8/9=%d/%d/%d/%d\n", __FUNCTION__, phydev->port, link6, link7, link8, link9);
-
-	if (phydev->port == 0){	//eth0 -> 88e6185 port 6
-		link = (link6 && (link7 || link8));
-	}else if(phydev->port == 1){	//eth1 -> 88e6185 port 9
-		link = (link9 && (link7 || link8));
-	}
-
-	//if (link){
-	//	res = mv88e6185_single_update_link(phydev);
-	//}
-
-	if (link){
-			printf("phydev=@%p\n", phydev);
-			phydev->link = 1;
-			phydev->duplex = DUPLEX_FULL;
-			phydev->speed = SPEED_1000;
-	}else{
-			phydev->link = 0;
-	}
-
-	return 0;
+	return mv88e6185_single_update_link(phydev);
 }
 
 /** single chip mode 88e6185 init for v205 A0/A1 board only*/
@@ -378,23 +342,6 @@ int get_phy_id(struct mii_dev *bus, int smi_addr, int devad, u32 *phy_id)
 
 	printf("[%s, %s] devad=%d\n", __FILE__, __FUNCTION__, devad);
 
-	//check port 1-9 at address 0x10-0x19, register 3 is product identifier == (0x1a72 & 0xfff0)
-	found6185=1;
-	for(addr=0x10; addr<=0x19; addr++){
-		phy_reg = bus->read(bus, addr, -1, 3);
-		//printf("addr%#x %#x,",addr, phy_reg);
-		if ((phy_reg & 0xfff0) != (0x1a72 & 0xfff0)){
-			found6185=0;
-			*phy_id = 0;
-			break;
-		}
-	}
-	if (found6185){
-		*phy_id = 0x088e6185;
-		printf("[%s, %s] set phy_id as 88e6185\n", __FILE__, __FUNCTION__);
-		return 0;
-	}
-
 	phy_reg = bus->read(bus, smi_addr, devad, MII_PHYSID1);
 	if (phy_reg < 0) return -EIO;
 	*phy_id = (phy_reg & 0xffff) << 16;
@@ -403,53 +350,23 @@ int get_phy_id(struct mii_dev *bus, int smi_addr, int devad, u32 *phy_id)
 	if (phy_reg < 0) return -EIO;
 	*phy_id |= (phy_reg & 0xffff);
 
-	return 0;
-
-/*
-	phy_reg = bus->read(bus, 0, -1, MII_PHYSID1);
-
-	phy_reg = bus->read(bus, 0, -1, MII_PHYSID1);
-
-	if (phy_reg < 0) return -EIO;
-
-	id1 = (phy_reg & 0xffff) << 16;
-
-	phy_reg = bus->read(bus, 0, -1, MII_PHYSID2);
-
-	if (phy_reg < 0) return -EIO;
-
-	id2 = (phy_reg & 0xfff0);
-
-	if (0x01411a70 == (id1 | id2)){
-
-		int i,j;
-		for (i=0; i<32; i++){
-			printf("\nmdio addr:%d\n",i);
-			for (j=0; j<32;j++){
-				phy_reg = bus->read(bus, i, -1, j);
-				printf("%x=%x,", j, phy_reg);
+	if (0 == *phy_id){
+		//check port 1-9 at address 0x10-0x19, register 3 is product identifier == (0x1a72 & 0xfff0)
+		found6185=1;
+		for(addr=0x10; addr<=0x19; addr++){
+			phy_reg = bus->read(bus, addr, -1, 3);
+			//printf("addr%#x %#x,",addr, phy_reg);
+			if ((phy_reg & 0xfff0) != (0x1a72 & 0xfff0)){
+				found6185=0;
+				break;
 			}
 		}
+		if (found6185){
+			*phy_id = 0x088e6185;
+			printf("[%s, %s] set phy_id as 88e6185\n", __FILE__, __FUNCTION__);
+			return 0;
+		}
 	}
-
-	int val;
-
-	printf("mii bus @0x%p, bus->priv =@0x%p, bus->name =%s\n", bus, bus->priv, bus->name);
-
-	val = mv88e6185_single_chip_phy_read_direct(bus, 0, MII_PHYSID1);
-	printf("MII_PHYSID1=0x%x\n", val);
-	if (val < 0)
-		return -EIO;
-
-	*phy_id = val << 16;
-
-	val = mv88e6185_single_chip_phy_read_direct(bus, 0, MII_PHYSID2);
-	printf("MII_PHYSID2=0x%x\n", val);
-	if (val < 0)
-		return -EIO;
-
-	*phy_id |= (val & 0xffff);
-
 	return 0;
-*/
+
 }
