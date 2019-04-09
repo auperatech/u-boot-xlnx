@@ -412,6 +412,8 @@ static int zynq_gem_init(struct udevice *dev)
 	struct emac_bd *dummy_tx_bd = &priv->tx_bd[TX_FREE_DESC];
 	struct emac_bd *dummy_rx_bd = &priv->tx_bd[TX_FREE_DESC + 2];
 
+	printf("call %s\n", __FUNCTION__);
+
 	if (readl(&regs->dcfg6) & ZYNQ_GEM_DCFG_DBG6_DMA_64B)
 		priv->dma_64bit = true;
 	else
@@ -570,6 +572,8 @@ static int zynq_gem_send(struct udevice *dev, void *ptr, int len)
 	struct zynq_gem_regs *regs = priv->iobase;
 	struct emac_bd *current_bd = &priv->tx_bd[1];
 
+	printf("call %s, len=%d\n", __FUNCTION__, len);
+
 	/* Setup Tx BD */
 	memset(priv->tx_bd, 0, sizeof(struct emac_bd));
 
@@ -611,7 +615,7 @@ static int zynq_gem_send(struct udevice *dev, void *ptr, int len)
 	/* Read TX BD status */
 	if (priv->tx_bd->status & ZYNQ_GEM_TXBUF_EXHAUSTED)
 		printf("TX buffers exhausted in mid frame\n");
-
+	printf("~");
 	return wait_for_bit(__func__, &regs->txsr, ZYNQ_GEM_TSR_DONE,
 			    true, 20000, true);
 }
@@ -623,6 +627,8 @@ static int zynq_gem_recv(struct udevice *dev, int flags, uchar **packetp)
 	dma_addr_t addr;
 	struct zynq_gem_priv *priv = dev_get_priv(dev);
 	struct emac_bd *current_bd = &priv->rx_bd[priv->rxbd_current];
+
+	printf("call %s\n", __FUNCTION__);
 
 	if (!(current_bd->addr & ZYNQ_GEM_RXBUF_NEW_MASK))
 		return -1;

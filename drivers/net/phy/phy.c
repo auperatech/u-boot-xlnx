@@ -382,7 +382,7 @@ int genphy_config(struct phy_device *phydev)
 {
 	int val;
 	u32 features;
-
+	printf("call %s\n", __FUNCTION__);
 	features = (SUPPORTED_TP | SUPPORTED_MII
 			| SUPPORTED_AUI | SUPPORTED_FIBRE |
 			SUPPORTED_BNC);
@@ -432,7 +432,7 @@ int genphy_config(struct phy_device *phydev)
 int genphy_startup(struct phy_device *phydev)
 {
 	int ret;
-
+	printf("call %s\n", __FUNCTION__);
 	ret = genphy_update_link(phydev);
 	if (ret)
 		return ret;
@@ -944,6 +944,11 @@ struct phy_device *phy_connect(struct mii_dev *bus, int addr,
 {
 	struct phy_device *phydev = NULL;
 	printf("[%s] addr=%d\n", __FUNCTION__, addr);
+	if (addr < 0){
+		printf("Ignore of phy addr is -1\n");
+		return NULL;
+	}
+
 #ifdef CONFIG_PHY_FIXED
 	phydev = phy_connect_fixed(bus, dev, interface);
 	printf("have define CONFIG_PHY_FIXED, got phydev= 0x%p\n", phydev);
@@ -953,7 +958,7 @@ struct phy_device *phy_connect(struct mii_dev *bus, int addr,
 #endif
 
 	if (phydev == NULL){
-		printf("phy_find_by_mask, 0x%d\n", addr);
+		printf("phy_find_by_mask, 0x%x\n", addr);
 		phydev = phy_find_by_mask(bus, 1 << addr, interface);
 	}
 

@@ -152,19 +152,21 @@ static int mv88e6185_single_probe(struct phy_device *phydev)
 static int mv88e6185_single_soft_reset(struct phy_device *phydev)
 {
 	int reg, i;
+	printf("call %s\n", __FUNCTION__);
 	reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
 	if (reg < 0) return reg;
 	reg |= GLOBAL1_CTRL_SWRESET;
 	reg = mv88e6185_single_chip_write(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL, reg);
 	for (i=0; i<1000; i++) {
+		udelay(1000);
 		reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
 		if (reg >= 0 && ((reg & GLOBAL1_CTRL_SWRESET) == 0))	break;
-		udelay(1000);
 	}
 }
 
 static int mv88e6185_single_config_aneg(struct phy_device *phydev)
 {
+	printf("call %s\n", __FUNCTION__);
 	/*1000baseX auto nego*/
 	phydev->autoneg = AUTONEG_DISABLE;
 	phydev->speed = SPEED_1000;
@@ -350,7 +352,7 @@ int get_phy_id(struct mii_dev *bus, int smi_addr, int devad, u32 *phy_id)
 	if (phy_reg < 0) return -EIO;
 	*phy_id |= (phy_reg & 0xffff);
 
-	if (0 == *phy_id){
+	if ( (0 == *phy_id) || (0xffffffff == *phy_id)){
 		//check port 1-9 at address 0x10-0x19, register 3 is product identifier == (0x1a72 & 0xfff0)
 		found6185=1;
 		for(addr=0x10; addr<=0x19; addr++){
