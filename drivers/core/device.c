@@ -306,6 +306,8 @@ int device_probe(struct udevice *dev)
 	if (dev->flags & DM_FLAG_ACTIVATED)
 		return 0;
 
+	printf("[%s] %s\n", __FUNCTION__, dev->name);
+
 	drv = dev->driver;
 	assert(drv);
 

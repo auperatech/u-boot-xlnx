@@ -701,6 +701,7 @@ static int zynq_gem_read_rom_mac(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_platdata(dev);
 
+	printf("[%s]\n", __FUNCTION__);
 	if (!pdata)
 		return -ENOSYS;
 

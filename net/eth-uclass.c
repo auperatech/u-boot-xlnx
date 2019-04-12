@@ -460,7 +460,7 @@ static int eth_post_probe(struct udevice *dev)
 	struct eth_device_priv *priv = dev->uclass_priv;
 	struct eth_pdata *pdata = dev->platdata;
 	unsigned char env_enetaddr[ARP_HLEN];
-
+	printf("[%s]\n", __FUNCTION__);
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
 	struct eth_ops *ops = eth_get_ops(dev);
 	static int reloc_done;
@@ -491,11 +491,12 @@ static int eth_post_probe(struct udevice *dev)
 
 	priv->state = ETH_STATE_INIT;
 
-	/* Check if the device has a MAC address in ROM */
+	/* Check if the device has a MAC address in ROM
 	if (eth_get_ops(dev)->read_rom_hwaddr)
-		eth_get_ops(dev)->read_rom_hwaddr(dev);
+		eth_get_ops(dev)->read_rom_hwaddr(dev);*/
 
 	eth_env_get_enetaddr_by_index("eth", dev->seq, env_enetaddr);
+	printf("env_enetaddr=%x%x%x%x%x%x\n", env_enetaddr[0],env_enetaddr[1],env_enetaddr[2],env_enetaddr[3],env_enetaddr[4],env_enetaddr[5]);
 	if (!is_zero_ethaddr(env_enetaddr)) {
 		if (!is_zero_ethaddr(pdata->enetaddr) &&
 		    memcmp(pdata->enetaddr, env_enetaddr, ARP_HLEN)) {
