@@ -608,8 +608,10 @@ static struct phy_driver *get_phy_driver(struct phy_device *phydev,
 
 	list_for_each(entry, &phy_drivers) {
 		drv = list_entry(entry, struct phy_driver, list);
-		if ((drv->uid & drv->mask) == (phy_id & drv->mask))
+		if ((drv->uid & drv->mask) == (phy_id & drv->mask)){
+			debug("[%s] uid=0x%x, mask=0x%x, name=%s\n", __FUNCTION__, drv->uid, drv->mask, drv->name);
 			return drv;
+		}
 	}
 
 	/* If we made it here, there's no driver for this PHY */
@@ -621,7 +623,7 @@ static struct phy_device *phy_device_create(struct mii_dev *bus, int addr,
 					    phy_interface_t interface)
 {
 	struct phy_device *dev;
-
+	debug("[%s] bus=%p, addr=0x%x, phyid=0x%x\n", __FUNCTION__, bus, addr, phy_id);
 	/* We allocate the device, and initialize the
 	 * default values */
 	dev = malloc(sizeof(*dev));
@@ -854,7 +856,7 @@ void phy_connect_dev(struct phy_device *phydev, struct eth_device *dev)
 				phydev->dev->name, dev->name);
 	}
 	phydev->dev = dev;
-	debug("%s connected to %s\n", dev->name, phydev->drv->name);
+	printf("%s connected to %s, phyaddr=%0xx\n", dev->name, phydev->drv->name, phydev->addr);
 }
 
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
@@ -940,8 +942,10 @@ struct phy_device *phy_connect(struct mii_dev *bus, int addr,
 	phydev = phy_connect_gmii2rgmii(bus, dev, interface);
 #endif
 
-	if (phydev == NULL)
+	if (phydev == NULL){
+		debug("phy_find_by_mask, 0x%x\n", addr);
 		phydev = phy_find_by_mask(bus, 1 << addr, interface);
+	}
 
 	if (phydev)
 		phy_connect_dev(phydev, dev);
