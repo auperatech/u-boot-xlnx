@@ -974,6 +974,7 @@ int macb_eth_initialize(int id, void *regs, unsigned int phy_addr)
 	eth_register(netdev);
 
 #if defined(CONFIG_CMD_MII) || defined(CONFIG_PHYLIB)
+
 	int retval;
 	struct mii_dev *mdiodev = mdio_alloc();
 	if (!mdiodev)

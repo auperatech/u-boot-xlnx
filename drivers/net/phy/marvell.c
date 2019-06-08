@@ -615,6 +615,195 @@ static int m88e1680_config(struct phy_device *phydev)
 	return 0;
 }
 
+/** copy form generic phy_reset, init with duplex bit */
+static int m88e1112_1000baseX_phy_reset(struct phy_device *phydev)
+{
+	int reg;
+	int timeout = 500;
+	int devad = MDIO_DEVAD_NONE;
+
+	if (phydev->flags & PHY_FLAG_BROKEN_RESET)
+		return 0;
+
+	if (phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR, (BMCR_RESET | BMCR_FULLDPLX | BMCR_ANENABLE))) {
+		debug("PHY 1112 reset failed\n");
+		return -1;
+	}
+
+	/*
+	 * Poll the control register for the reset bit to go to 0 (it is
+	 * auto-clearing).  This should happen within 0.5 seconds per the
+	 * IEEE spec.
+	 */
+	reg = phy_read(phydev, devad, MII_BMCR);
+	while ((reg & BMCR_RESET) && timeout--) {
+		reg = phy_read(phydev, devad, MII_BMCR);
+
+		if (reg < 0) {
+			debug("PHY 1112 status read failed\n");
+			return -1;
+		}
+		udelay(1000);
+	}
+
+	if (reg & BMCR_RESET) {
+		puts("PHY 1112 reset timed out\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static int m88e1112_1000baseX_config_aneg(struct phy_device *phydev)
+{
+	u32 advertise;
+	int oldadv, adv;
+	int err, changed = 0;
+	int ctl, result;
+
+	/* Only allow advertising what this PHY supports */
+	phydev->advertising &= phydev->supported;
+	advertise = phydev->advertising;
+
+	/* Setup standard advertisement */
+	adv = phy_read(phydev, MDIO_DEVAD_NONE, MII_ADVERTISE);
+	oldadv = adv;
+
+	if (adv < 0)
+		return adv;
+
+	adv &= ~(ADVERTISE_ALL);
+
+	if (advertise & ADVERTISE_1000XHALF)
+		adv |= ADVERTISE_1000XHALF;
+	if (advertise & ADVERTISE_1000XFULL)
+		adv |= ADVERTISE_1000XFULL;
+
+	if (adv != oldadv) {
+		//printf("[%s] re-write fiber auto nego from %x->%x\n", oldadv, adv);
+		err = phy_write(phydev, MDIO_DEVAD_NONE, MII_ADVERTISE, adv);
+		if (err < 0)
+			return err;
+		changed = 1;
+	}else{
+		;//printf("[%s] fiber auto nego was 0x%x\n", __FUNCTION__, oldadv);
+	}
+
+	ctl = phy_read(phydev, MDIO_DEVAD_NONE, MII_BMCR);
+
+	if (ctl < 0)
+		return ctl;
+
+	if (!(ctl & BMCR_ANENABLE) || (ctl & BMCR_ISOLATE))
+		result = 1; /* do restart aneg */
+
+	/* Only restart aneg if we are advertising something different than we were before.	 */
+	if (result > 0 || changed)
+		result = genphy_restart_aneg(phydev);
+
+	return result;
+}
+
+static int m88e1112_1000baseX_config(struct phy_device *phydev)
+{
+	int reg;
+
+	/* soft reset */
+	m88e1112_1000baseX_phy_reset(phydev);
+
+	//if (phydev->interface == PHY_INTERFACE_MODE_SGMII) {	//for aupera v205, we have only sgmii to 1000basex, no-copper
+	/*88e1112 page2, reg16=mac specific control, bit 9:7=mode_select 111=sgmii to 1000baseX only*/
+	reg = m88e1xxx_phy_extread(phydev, MDIO_DEVAD_NONE, 2, 16);
+	reg |= 0x0380;
+	m88e1xxx_phy_extwrite(phydev, MDIO_DEVAD_NONE, 2, 16, reg);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE, 1);	/*disable auto media register selection, fixed on fibber*/
+
+	/*1000baseX no auto nego*/
+	phydev->autoneg = AUTONEG_ENABLE;
+	phydev->speed = SPEED_1000;
+	phydev->duplex = DUPLEX_FULL;
+	phydev->supported   = ADVERTISE_1000XFULL | ADVERTISE_1000XHALF;	// | ADVERTISE_1000XPAUSE | ADVERTISE_1000XPSE_ASYM;
+	phydev->advertising = ADVERTISE_1000XFULL | ADVERTISE_1000XHALF;	// | ADVERTISE_1000XPAUSE | ADVERTISE_1000XPSE_ASYM;
+
+	udelay(1000);
+
+	/* soft reset */
+	m88e1112_1000baseX_phy_reset(phydev);
+
+	m88e1112_1000baseX_config_aneg(phydev);
+	genphy_restart_aneg(phydev);
+
+	return 0;
+}
+
+/* Parse the 88E1112's status register for fabric 1000baseX speed and duplex
+ * information
+ */
+static int m88e1112_1000baseX_parse_status(struct phy_device *phydev)
+{
+	unsigned int mii_reg;
+
+	mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_88E1xxx_PHY_STATUS);
+
+	if ((mii_reg & MIIM_88E1xxx_PHYSTAT_LINK) &&
+		!(mii_reg & MIIM_88E1xxx_PHYSTAT_SPDDONE)) {
+		int i = 0;
+
+		puts("Waiting for 88e1112 1000baseX realtime link");
+		while (!(mii_reg & MIIM_88E1xxx_PHYSTAT_SPDDONE)) {
+			/* Timeout reached ? */
+			if (i > PHY_AUTONEGOTIATE_TIMEOUT) {
+				puts(" TIMEOUT !\n");
+				phydev->link = 0;
+				return -ETIMEDOUT;
+			}
+
+			if ((i++ % 1000) == 0) putc('.');
+			udelay(1000);
+			mii_reg = phy_read(phydev, MDIO_DEVAD_NONE,
+					MIIM_88E1xxx_PHY_STATUS);
+
+			if (mii_reg & MIIM_88E1xxx_PHYSTAT_LINK){
+				puts(" linked ");
+				break;
+			}
+		}
+		puts(" done\n");
+		udelay(500000);	/* another 500 ms (results in faster booting) */
+	}else{
+		;//printf("1st fabric_status=0x%x\n", mii_reg);
+	}
+
+	mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_88E1xxx_PHY_STATUS);
+
+	if (mii_reg & MIIM_88E1xxx_PHYSTAT_LINK){
+		phydev->link = 1;
+		phydev->speed = SPEED_1000;
+		if (mii_reg & MIIM_88E1xxx_PHYSTAT_DUPLEX)
+			phydev->duplex = DUPLEX_FULL;
+		else
+			phydev->duplex = DUPLEX_HALF;
+	}else{
+		printf("2nd fail fabric_status=0x%x\n", mii_reg);
+		phydev->link = 0;
+	}
+
+	return 0;
+}
+
+static int m88e1112_1000baseX_startup(struct phy_device *phydev)
+{
+	int ret;
+
+	ret = genphy_update_link(phydev);
+	if (ret)
+		return ret;
+
+	return m88e1112_1000baseX_parse_status(phydev);
+}
+
 static struct phy_driver M88E1011S_driver = {
 	.name = "Marvell 88E1011S",
 	.uid = 0x1410c60,
@@ -734,6 +923,18 @@ static struct phy_driver M88E1680_driver = {
 	.shutdown = &genphy_shutdown,
 };
 
+static struct phy_driver M88E1112_1000baseX_driver = {
+	.name = "Marvell 88E1112",
+	.uid = 0x1410c90,
+	.mask = 0xffffff0,
+	.features = PHY_GBIT_FEATURES,
+	.config = &m88e1112_1000baseX_config,
+	.startup = &m88e1112_1000baseX_startup,
+	.shutdown = &genphy_shutdown,
+	.readext = &m88e1xxx_phy_extread,
+	.writeext = &m88e1xxx_phy_extwrite,
+};
+
 int phy_marvell_init(void)
 {
 	phy_register(&M88E1310_driver);
@@ -743,6 +944,7 @@ int phy_marvell_init(void)
 	phy_register(&M88E1118_driver);
 	phy_register(&M88E1118R_driver);
 	phy_register(&M88E1111S_driver);
+	phy_register(&M88E1112_1000baseX_driver);
 	phy_register(&M88E1011S_driver);
 	phy_register(&M88E1510_driver);
 	phy_register(&M88E1518_driver);
