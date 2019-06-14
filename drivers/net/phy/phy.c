@@ -856,7 +856,7 @@ void phy_connect_dev(struct phy_device *phydev, struct eth_device *dev)
 				phydev->dev->name, dev->name);
 	}
 	phydev->dev = dev;
-	printf("%s connected to %s, phyaddr=%0xx\n", dev->name, phydev->drv->name, phydev->addr);
+	printf("%s connected to %s, phyaddr=0x%x\n", dev->name, phydev->drv->name, phydev->addr);
 }
 
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
