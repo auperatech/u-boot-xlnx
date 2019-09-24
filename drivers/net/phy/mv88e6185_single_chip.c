@@ -204,16 +204,16 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 
    	/*1000basex uplink port 7/8 link auto nego*/
 	reg = mv88e6185_single_chip_read(phydev, 0x17, 0x1);
-   	printf ("[%s] port7 original PCS ctrl: 0x%x", __FUNCTION__, reg);
+   	printf ("[%s] port7 original PCS ctrl: 0x%x\n", __FUNCTION__, reg);
 	reg = (reg | 0x600) & 0xffff;	//PCS Inband Auto-Negotiation Enable, and Restart PCS Inband Auto-Negotiation
 	mv88e6185_single_chip_write(phydev, 0x17, 0x1, reg);
-   	printf ("[%s] port7 set PCS ctrl= 0x%x", __FUNCTION__, reg);
+   	printf ("[%s] port7 set PCS ctrl= 0x%x\n", __FUNCTION__, reg);
 
 	reg = mv88e6185_single_chip_read(phydev, 0x18, 0x1);
-   	printf ("[%s] port8 original PCS ctrl: 0x%x", __FUNCTION__, reg);
+   	printf ("[%s] port8 original PCS ctrl: 0x%x\n", __FUNCTION__, reg);
 	reg = (reg | 0x600) & 0xffff;	//PCS Inband Auto-Negotiation Enable, and Restart PCS Inband Auto-Negotiation
 	mv88e6185_single_chip_write(phydev, 0x18, 0x1, reg);
-   	printf ("[%s] port8 set PCS ctrl= 0x%x", __FUNCTION__, reg);
+   	printf ("[%s] port8 set PCS ctrl= 0x%x\n", __FUNCTION__, reg);
 
    	/*cpu port 6/9 set to auto nego then fixed link*/
 /*
@@ -228,30 +228,35 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 	mv88e6185_single_chip_write(phydev, 0x18, PORT_REG_PHYS_CTRL, reg);
 */
 	reg = mv88e6185_single_chip_read(phydev, 0x16, PORT_REG_PHYS_CTRL);
+   	printf ("[%s] port6 original PHY ctrl: 0x%x\n", __FUNCTION__, reg);
 	reg &= ~(PORT_REG_PHYS_CTRL_SPD_MASK | PORT_REG_PHYS_CTRL_FC_VALUE);
 	reg |= (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD1000);
 	mv88e6185_single_chip_write(phydev, 0x16, PORT_REG_PHYS_CTRL, reg);
+   	printf ("[%s] port6 set PHY ctrl= 0x%x\n", __FUNCTION__, reg);
 
 	reg = mv88e6185_single_chip_read(phydev, 0x19, PORT_REG_PHYS_CTRL);
+   	printf ("[%s] port9 original PHY ctrl: 0x%x\n", __FUNCTION__, reg);
 	reg &= ~(PORT_REG_PHYS_CTRL_SPD_MASK | PORT_REG_PHYS_CTRL_FC_VALUE);
 	reg |= (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD1000);
 	mv88e6185_single_chip_write(phydev, 0x19, PORT_REG_PHYS_CTRL, reg);
+   	printf ("[%s] port6 set PHY ctrl= 0x%x\n", __FUNCTION__, reg);
+	udelay(500000);
 /*
 	mv88e6185_single_chip_write(phydev, 0x16, 0x1, 0x83E);
 	mv88e6185_single_chip_write(phydev, 0x19, 0x1, 0x83E);
-	udelay(500000);
+	udelay(800000);
 
 	mv88e6185_single_chip_write(phydev, 0x16, 0x1, 0x603);
 	mv88e6185_single_chip_write(phydev, 0x19, 0x1, 0x603);
-	udelay(500000);
+	udelay(800000);
 
 	mv88e6185_single_chip_write(phydev, 0x16, 0x1, 0x83E);
 	mv88e6185_single_chip_write(phydev, 0x19, 0x1, 0x83E);
-	udelay(500000);
+	udelay(800000);
 
 	mv88e6185_single_chip_write(phydev, 0x16, 0x1, 0x3E);
 	mv88e6185_single_chip_write(phydev, 0x19, 0x1, 0x3E);
-	udelay(500000);
+	udelay(800000);
 */
 
 	/*soft reset*/
@@ -286,7 +291,7 @@ static int mv88e6185_single_update_link(struct phy_device *phydev)
 	if (val < 0) return 0;
 	link9 = (val & PORT_REG_STATUS_LINK) == 0;
 
-	printf("port=%d, link 6/7/8/9=%d/%d/%d/%d\n", phydev->port, link6, link7, link8, link9);
+	printf("phydev port=%d, link status 6/7/8/9=%d/%d/%d/%d\n", phydev->port, link6, link7, link8, link9);
 
 	if (phydev->port == 0){	//eth0 -> 88e6185 port 6
 		link = (link6 && (link7 || link8));
