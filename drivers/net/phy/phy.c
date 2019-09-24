@@ -548,7 +548,10 @@ int phy_init(void)
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
 	phy_xilinx_gmii2rgmii_init();
 #endif
-	genphy_init();
+#ifdef CONFIG_MV88E6185_SWITCH_SINGLE_CHIP
+	phy_mv88e6185_single_chip_init();
+#endif
+//	genphy_init();
 
 	return 0;
 }
@@ -900,7 +903,7 @@ void phy_connect_dev(struct phy_device *phydev, struct eth_device *dev)
 		       phydev->dev->name, dev->name);
 	}
 	phydev->dev = dev;
-	printf("%s connected to %s, phyaddr=%0xx\n", dev->name, phydev->drv->name, phydev->addr);
+	printf("%s connected to %s, phyaddr=0x%x\n", dev->name, phydev->drv->name, phydev->addr);
 }
 
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
