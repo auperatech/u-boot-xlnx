@@ -62,9 +62,11 @@ void main_loop(void)
 	run_command("setenv aup_imgsize 0x2fe0000", 0);
 	run_command("setenv aup_imgofst 0x1000000", 0);
 	run_command("setenv aup_sdboot   \"mmc dev 1 && mmcinfo && load mmc 1:1 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
-	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:1 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
-	run_command("setenv aup_pure_qspiboot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}\"", 0);
-	run_command("setenv aup_qspiboot \"mmc dev 0 && mmcinfo && load mmc 0:2 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:2 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_qspi_recover_boot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_qspiboot1 \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}#conf@1\"", 0);
+	run_command("setenv aup_qspiboot2 \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}#conf@2\"", 0);
+	run_command("setenv aup_qspiboot  \"run aup_emmcboot || run aup_qspiboot1\"", 0);
 	run_command("setenv aup_usbboot \"usb start && load usb 0 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 	run_command("setenv aup_tftpboot \"setenv ethact eth0 && setenv serverip 192.168.1.254 && setenv ipaddr 192.168.1.250 && tftpboot ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 	run_command("setenv aup_boottry \"for target in  qspi sd emmc usb tftp; do run aup_${target}boot; done\"", 0);
