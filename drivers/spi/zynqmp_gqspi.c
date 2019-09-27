@@ -195,6 +195,12 @@ static int zynqmp_qspi_ofdata_to_platdata(struct udevice *bus)
 {
 	struct zynqmp_qspi_platdata *plat = bus->platdata;
 	int is_dual;
+	u32 mode = 0;
+	int offset;
+	u32 value;
+	int ret;
+	struct clk clk;
+	unsigned long clock;
 
 	debug("%s\n", __func__);
 
@@ -217,6 +223,65 @@ static int zynqmp_qspi_ofdata_to_platdata(struct udevice *bus)
 
 	plat->io_mode = fdtdec_get_bool(gd->fdt_blob, dev_of_offset(bus),
 					"has-io-mode");
+
+	offset = fdt_first_subnode(gd->fdt_blob, dev_of_offset(bus));
+
+	value = fdtdec_get_uint(gd->fdt_blob, offset, "spi-rx-bus-width", 1);
+	switch (value) {
+	case 1:
+		break;
+	case 2:
+		mode |= SPI_RX_DUAL;
+		break;
+	case 4:
+		mode |= SPI_RX_QUAD;
+		break;
+	default:
+		printf("Invalid spi-rx-bus-width %d\n", value);
+		break;
+	}
+
+	value = dev_read_u32_default(bus, "spi-tx-bus-width", 1);
+	switch (value) {
+	case 1:
+		break;
+	case 2:
+		mode |= SPI_TX_DUAL;
+		break;
+	case 4:
+		mode |= SPI_TX_QUAD;
+		break;
+	default:
+		printf("Invalid spi-tx-bus-width %d\n", value);
+		break;
+	}
+
+	//plat->tx_rx_mode = mode;
+	struct zynqmp_qspi_priv *priv = dev_get_priv(bus);
+	priv->tx_rx_mode = mode;
+
+	ret = clk_get_by_index(bus, 0, &clk);
+	if (ret < 0) {
+		dev_err(dev, "failed to get clock\n");
+		return ret;
+	}
+
+	clock = clk_get_rate(&clk);
+	if (IS_ERR_VALUE(clock)) {
+		dev_err(dev, "failed to get rate\n");
+		return clock;
+	}
+	debug("%s: CLK %ld\n", __func__, clock);
+
+	ret = clk_enable(&clk);
+	if (ret && ret != -ENOSYS) {
+		dev_err(dev, "failed to enable clock\n");
+		return ret;
+	}
+
+	printf("set qspi tx_rx_mode=0x%x, frequency %d->%d\n", mode, plat->frequency, clock);
+	plat->frequency = clock;
+	plat->speed_hz = plat->frequency;
 
 	return 0;
 }
@@ -378,7 +443,7 @@ static int zynqmp_qspi_set_speed(struct udevice *bus, uint speed)
 	u32 confr;
 	u8 baud_rate_val = 0;
 
-	debug("%s\n", __func__);
+	printf("%s, speed=%d\n", __func__, speed);
 	if (speed > plat->frequency)
 		speed = plat->frequency;
 
@@ -478,7 +543,7 @@ static int zynqmp_qspi_set_mode(struct udevice *bus, uint mode)
 	struct zynqmp_qspi_regs *regs = priv->regs;
 	u32 confr;
 
-	debug("%s\n", __func__);
+	printf("%s, mode=0x%x\n", __func__, mode);
 	/* Set the SPI Clock phase and polarities */
 	confr = readl(&regs->confr);
 	confr &= ~(GQSPI_CONFIG_CPHA_MASK |
