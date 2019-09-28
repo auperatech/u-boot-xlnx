@@ -444,7 +444,7 @@ static int zynqmp_qspi_set_speed(struct udevice *bus, uint speed)
 	u8 baud_rate_val = 0;
 
 	printf("%s, speed=%d\n", __func__, speed);
-	if (speed > plat->frequency)
+	if (speed < plat->frequency)
 		speed = plat->frequency;
 
 	/* Set the clock frequency */
@@ -470,7 +470,7 @@ static int zynqmp_qspi_set_speed(struct udevice *bus, uint speed)
 #if !defined(CONFIG_ARCH_VERSAL)
 	zynqmp_qspi_set_tapdelay(bus, baud_rate_val);
 #endif
-	debug("regs=%p, speed=%d\n", priv->regs, plat->speed_hz);
+	printf("regs=%p, speed=%d\n", priv->regs, plat->speed_hz);
 
 	return 0;
 }
