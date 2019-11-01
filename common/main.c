@@ -57,6 +57,7 @@ void main_loop(void)
 //#ifdef CONFIG_V205_WORKAROUND_PETA2019_1_UBOOTENV
 	printf("notice: hardcode workaround for uboot env change since 2018.3\n");
 
+	run_command("i2c read 0x10000000 0x50 0x14 1; setenvram.b aup_rootfselect 0x10000000;", 0);
 	run_command("setenv aup_imgname image.ub", 0);
 	run_command("setenv aup_imgaddr 0x10000000", 0);
 	run_command("setenv aup_imgsize 0x2fe0000", 0);
@@ -71,7 +72,7 @@ void main_loop(void)
 	run_command("setenv aup_tftpboot \"setenv ethact eth0 && setenv serverip 192.168.1.254 && setenv ipaddr 192.168.1.250 && tftpboot ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 	run_command("setenv aup_boottry \"for target in  qspi sd emmc usb tftp; do run aup_${target}boot; done\"", 0);
 	run_command("setenv bootcmd \"run aup_${modeboot}\"", 0);
-
+	//sdbootdev=0 or 1
 	//run_command("if test \"${modeboot}\" = \"sdboot\"; then setenv sdboot \"mmc dev 1 && mmcinfo && load mmc 1:1 0x10000000 image.ub && bootm 0x10000000\"; fi;", 0);
 	//run_command("if test \"${modeboot}\" = \"qspiboot\"; then setenv qspiboot \"sf probe && sf read 0x10000000 0x1000000 0x2fe0000 && bootm 0x10000000\"; fi;", 0);
 //#endif
