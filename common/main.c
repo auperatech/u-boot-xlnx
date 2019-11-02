@@ -57,13 +57,14 @@ void main_loop(void)
 //#ifdef CONFIG_V205_WORKAROUND_PETA2019_1_UBOOTENV
 	printf("notice: hardcode workaround for uboot env change since 2018.3\n");
 
-	run_command("i2c read 0x10000000 0x50 0x14 1; setenvram.b aup_rootfselect 0x10000000;", 0);
+	run_command("i2c dev 0; i2c read 0x50 0x14 1 0x10000000; setenvram.bd aup_rootfselect 0x10000000;", 0);
+	run_command("if test ${aup_rootfselect} = 3; then echo 'rootfselect mmcblk0p3'; else if test ${aup_rootfselect} = 2;then echo 'rootfselect mmcblk0p2'; else i2c mw 0x50 0x14 2 1; echo 'change rootfselect from '; printenv aup_rootfselect; echo ' to 2=mmcblk0p2'; setenv aup_rootfselect 2;fi; fi;", 0);
 	run_command("setenv aup_imgname image.ub", 0);
 	run_command("setenv aup_imgaddr 0x10000000", 0);
 	run_command("setenv aup_imgsize 0x2fe0000", 0);
 	run_command("setenv aup_imgofst 0x1000000", 0);
 	run_command("setenv aup_sdboot   \"mmc dev 1 && mmcinfo && load mmc 1:1 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
-	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:2 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 	run_command("setenv aup_qspi_recover_boot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}\"", 0);
 	run_command("setenv aup_qspiboot1 \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}#conf@1\"", 0);
 	run_command("setenv aup_qspiboot2 \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}#conf@2\"", 0);

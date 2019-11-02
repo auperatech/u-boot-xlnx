@@ -131,6 +131,8 @@ U_BOOT_CMD(
     "name addr {len}\n"
     "[.b, .w, .l, .s, .k] name address {max_length}\n"
     "    - set environment variable 'name' from memory address 'addr'\n"
-    "    - .h=hex,.b=byte,.w=htons word,.l=htonl long,.s=string with length,.k=long\n"
+    "    - .b=byte,.w=htons word,.l=htonl long,.s=string with length,.k=long\n"
+    "    - default in hex format like 0xd, if with .d=decimal got 13\n"
+    "    - example: setenvram.b myvar 0x10000000; setenvram.wd myword 0x10000000; setenvram.s mystr 0x10000000 16;\n"
 );
 
