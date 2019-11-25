@@ -259,6 +259,45 @@ static int phywrite(struct zynq_gem_priv *priv, u32 phy_addr,
 			    ZYNQ_GEM_PHYMNTNC_OP_W_MASK, &data);
 }
 
+static int phy_detection(struct udevice *dev)
+{
+	int i;
+	u16 phyreg = 0;
+	struct zynq_gem_priv *priv = dev->priv;
+
+	if (priv->phyaddr != -1) {
+		phyread(priv, priv->phyaddr, PHY_DETECT_REG, &phyreg);
+		if ((phyreg != 0xFFFF) &&
+		    ((phyreg & PHY_DETECT_MASK) == PHY_DETECT_MASK)) {
+			/* Found a valid PHY address */
+			debug("Default phy address %d is valid\n",
+			      priv->phyaddr);
+			return 0;
+		} else {
+			debug("PHY address is not setup correctly %d\n",
+			      priv->phyaddr);
+			priv->phyaddr = -1;
+		}
+	}
+
+	debug("detecting phy address\n");
+	if (priv->phyaddr == -1) {
+		/* detect the PHY address */
+		for (i = 31; i >= 0; i--) {
+			phyread(priv, i, PHY_DETECT_REG, &phyreg);
+			if ((phyreg != 0xFFFF) &&
+			    ((phyreg & PHY_DETECT_MASK) == PHY_DETECT_MASK)) {
+				/* Found a valid PHY address */
+				priv->phyaddr = i;
+				debug("Found valid phy address, %d\n", i);
+				return 0;
+			}
+		}
+	}
+	printf("PHY is not detected\n");
+	return -1;
+}
+
 static int zynq_gem_setup_mac(struct udevice *dev)
 {
 	u32 i, macaddrlow, macaddrhigh;
@@ -303,6 +342,15 @@ static int zynq_phy_init(struct udevice *dev)
 
 	/* Enable only MDIO bus */
 	writel(ZYNQ_GEM_NWCTRL_MDEN_MASK, &regs->nwctrl);
+
+	if ((priv->interface != PHY_INTERFACE_MODE_SGMII) &&
+	    (priv->interface != PHY_INTERFACE_MODE_GMII)) {
+		ret = phy_detection(dev);
+		if (ret) {
+			printf("GEM PHY init failed\n");
+			return ret;
+		}
+	}
 
 	priv->phydev = phy_connect(priv->bus, priv->phyaddr, dev,
 				   priv->interface);
@@ -437,6 +485,8 @@ static int zynq_gem_init(struct udevice *dev)
 	 * Set SGMII enable PCS selection only if internal PCS/PMA
 	 * core is used and interface is SGMII.
 	 */
+	printf("zynq_gem priv: interface=%d, int_pcs=%d, phyaddr=%d, link=%d, autoneg=%d, speed=%d, duplex=%d\n", priv->interface, priv->int_pcs, priv->phyaddr, priv->phydev->link, priv->phydev->autoneg, priv->phydev->speed, priv->phydev->duplex);
+
 	if (priv->interface == PHY_INTERFACE_MODE_SGMII &&
 	    priv->int_pcs) {
 		nwconfig |= ZYNQ_GEM_NWCFG_SGMII_ENBL |
@@ -712,6 +762,7 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 	struct zynq_gem_priv *priv = dev_get_priv(dev);
 	struct ofnode_phandle_args phandle_args;
 	const char *phy_mode;
+	int ret, gpio_phy_hw_rst;
 
 	pdata->iobase = (phys_addr_t)dev_read_addr(dev);
 	priv->iobase = (struct zynq_gem_regs *)pdata->iobase;
@@ -740,8 +791,28 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 
 	priv->int_pcs = dev_read_bool(dev, "is-internal-pcspma");
 
-	printf("ZYNQ GEM: %lx, phyaddr %x, interface %s\n", (ulong)priv->iobase,
-	       priv->phyaddr, phy_string_for_interface(priv->interface));
+	printf("ZYNQ GEM: %lx, phyaddr %x, phy_inerface %x, interface %s, max_speed %d, int_pcs %d \n", (ulong)priv->iobase,
+	       priv->phyaddr, pdata->phy_interface, phy_string_for_interface(priv->interface), priv->max_speed, priv->int_pcs);
+
+	gpio_phy_hw_rst = 72;
+	/* grab the pin before we tweak it */
+	ret = gpio_request(gpio_phy_hw_rst, "cmd_gpio");
+	if (ret && ret != -EBUSY) {
+		printf("gpio: requesting pin %u failed\n", gpio_phy_hw_rst);
+		return -1;
+	}
+
+	/** use gpio 72 reset 88e6185 or 88e1112, output 0=reset, 1=run,
+		88e1112 have a reset-chip with 250ms reset delay, we will use dts to get gpio later */
+	static bool phy_hw_reseted = false;
+	if (! phy_hw_reseted){
+		gpio_direction_output(gpio_phy_hw_rst, 0);
+		udelay(100*1000);        //100ms
+		gpio_direction_output(gpio_phy_hw_rst, 1);
+		udelay(400*1000);       //400ms for reset-chip delay
+		printf("hardware gpio %d reset phy!\n", gpio_phy_hw_rst);
+		phy_hw_reseted = true;
+	}
 
 	return 0;
 }

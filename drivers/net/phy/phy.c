@@ -548,7 +548,10 @@ int phy_init(void)
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
 	phy_xilinx_gmii2rgmii_init();
 #endif
-	genphy_init();
+#ifdef CONFIG_MV88E6185_SWITCH_SINGLE_CHIP
+	phy_mv88e6185_single_chip_init();
+#endif
+//	genphy_init();
 
 	return 0;
 }
@@ -633,8 +636,10 @@ static struct phy_driver *get_phy_driver(struct phy_device *phydev,
 
 	list_for_each(entry, &phy_drivers) {
 		drv = list_entry(entry, struct phy_driver, list);
-		if ((drv->uid & drv->mask) == (phy_id & drv->mask))
+		if ((drv->uid & drv->mask) == (phy_id & drv->mask)){
+			debug("[%s] uid=0x%x, mask=0x%x, name=%s\n", __FUNCTION__, drv->uid, drv->mask, drv->name);
 			return drv;
+		}
 	}
 
 	/* If we made it here, there's no driver for this PHY */
@@ -898,7 +903,7 @@ void phy_connect_dev(struct phy_device *phydev, struct eth_device *dev)
 		       phydev->dev->name, dev->name);
 	}
 	phydev->dev = dev;
-	debug("%s connected to %s\n", dev->name, phydev->drv->name);
+	printf("%s connected to %s, phyaddr=0x%x\n", dev->name, phydev->drv->name, phydev->addr);
 }
 
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII

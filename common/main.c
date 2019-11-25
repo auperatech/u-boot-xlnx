@@ -54,6 +54,31 @@ void main_loop(void)
 	if (IS_ENABLED(CONFIG_UPDATE_TFTP))
 		update_tftp(0UL, NULL, NULL);
 
+//#ifdef CONFIG_V205_WORKAROUND_PETA2019_1_UBOOTENV
+	printf("notice: hardcode workaround for uboot env change since 2018.3\n");
+
+	run_command("i2c dev 0; i2c read 0x50 0x14 1 0x10000000; setenvram.bd aup_rootfselect 0x10000000;", 0);
+	run_command("if test ${aup_rootfselect} = 3; then echo 'rootfselect mmcblk0p3'; else if test ${aup_rootfselect} = 2;then echo 'rootfselect mmcblk0p2'; else i2c mw 0x50 0x14 2 1; echo 'change rootfselect from '; printenv aup_rootfselect; echo ' to 2=mmcblk0p2'; setenv aup_rootfselect 2;fi; fi;", 0);
+	run_command("setenv aup_imgname image.ub", 0);
+	run_command("setenv aup_imgaddr 0x10000000", 0);
+	run_command("setenv aup_imgsize 0x2fe0000", 0);
+	run_command("setenv aup_imgofst 0x1000000", 0);
+	run_command("setenv aup_sdboot   \"mmc dev 1 && mmcinfo && load mmc 1:1 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} && cp 0x10f783ec $fdt_addr 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; bootm ${aup_imgaddr}\"", 0);
+	//load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} ; iminfo 0x10000000; (Data Start:   0x10f783ec); fdt addr 0x10f783ec; fdt get value bootargs /chosen bootargs;
+	//mmc dev 0;load mmc 0:3 0x10000000 image.ub ; iminfo 0x10000000; cp 0x10f783ec $fdt_addr 0x100000; fdt addr $fdt_addr; fdt get value bootargs /chosen bootargs; fdt set /chosen bootargs "earlycon console=ttyPS0,115200 clk_ignore_unused root=/dev/mmcblk0p3 rw rootwait"; setexpr bootargs sub "root=/dev/mmcblk0p2" "root=/dev/mmcblk0p4" booti 0x100000e8 - $fdt_addr;
+	run_command("setenv aup_qspi_recover_boot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_qspiboot1 \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}#conf@1\"", 0);
+	run_command("setenv aup_qspiboot2 \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}#conf@2\"", 0);
+	run_command("setenv aup_qspiboot  \"run aup_emmcboot || run aup_qspiboot1\"", 0);
+	run_command("setenv aup_usbboot \"usb start && load usb 0 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_tftpboot \"setenv ethact eth0 && setenv serverip 192.168.1.254 && setenv ipaddr 192.168.1.250 && tftpboot ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_boottry \"for target in  qspi sd emmc usb tftp; do run aup_${target}boot; done\"", 0);
+	run_command("setenv bootcmd \"run aup_${modeboot}\"", 0);
+	//sdbootdev=0 or 1
+	//run_command("if test \"${modeboot}\" = \"sdboot\"; then setenv sdboot \"mmc dev 1 && mmcinfo && load mmc 1:1 0x10000000 image.ub && bootm 0x10000000\"; fi;", 0);
+	//run_command("if test \"${modeboot}\" = \"qspiboot\"; then setenv qspiboot \"sf probe && sf read 0x10000000 0x1000000 0x2fe0000 && bootm 0x10000000\"; fi;", 0);
+//#endif
 	s = bootdelay_process();
 	if (cli_process_fdt(&s))
 		cli_secure_boot_cmd(s);
