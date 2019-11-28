@@ -157,7 +157,7 @@ obj-$(CONFIG_CMD_ZIP) += zip.o
 obj-$(CONFIG_CMD_ZFS) += zfs.o
 
 #setenv from ram
-obj-y += setenvram.o
+obj-$(CONFIG_CMD_AUP_RAM) += setenvram.o
 
 #setenv from uart
 obj-$(CONFIG_CMD_AUP_UART) += setenvuart.o
