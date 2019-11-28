@@ -71,7 +71,7 @@ int do_setenvram(
 
     if ( argc == 4 ) {
         len = simple_strtol(argv[3], NULL, 16);
-        if ( !len || len >= buffer ) {
+        if ( !len || len >= sizeof(buffer) ) {
             printf ("Usage:\n%s\n", cmdtp->usage);
             return 1;
         }
