@@ -99,7 +99,7 @@ static int do_setenvuart_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 	{
 		uartx_write(portnum,_cmd_list[0].cmd,strlen(_cmd_list[0].cmd));
 		memset(buffer, 0, sizeof(buffer));
-		readsize=uartx_read(portnum,buffer,sizeof(buffer));
+		readsize=uartx_read(portnum,buffer,sizeof(buffer)-1);
 
 		//printf("bootinfo:%s\r\n",buffer);
 
@@ -148,14 +148,13 @@ static int do_setenvuart_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 		memset(SlotID,0,sizeof(SlotID));
 		memset(NodeID,0,sizeof(NodeID));
 		memset(ChassType,0,sizeof(ChassType));
-		i=0;
-		CrcPost=i+2;
+
+		CrcPost=2;
 		for(i=0;i<strlen(target)-CrcPost;i++)
 		{
 			if( ( (target[CrcPost+i]>='0')&&(target[CrcPost+i]<='9') ) ||
 			    ( (target[CrcPost+i]>='a')&&(target[CrcPost+i]<='f') ) ||
-			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') ) ||
-			    ( !target[CrcPost+i] )
+			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') )
 			  )
 			{
 				CpuMAC[i]=target[CrcPost+i];
@@ -177,8 +176,7 @@ static int do_setenvuart_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 		{
 			if( ( (target[CrcPost+i]>='0')&&(target[CrcPost+i]<='9') ) ||
 			    ( (target[CrcPost+i]>='a')&&(target[CrcPost+i]<='f') ) ||
-			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') ) ||
-			    ( !target[CrcPost+i] )
+			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') )
 			  )
 			{
 				ManageMAC[i]=target[CrcPost+i];
@@ -200,8 +198,7 @@ static int do_setenvuart_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 		{
 			if( ( (target[CrcPost+i]>='0')&&(target[CrcPost+i]<='9') ) ||
 			    ( (target[CrcPost+i]>='a')&&(target[CrcPost+i]<='f') ) ||
-			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') ) ||
-			    ( !target[CrcPost+i] )
+			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') )
 			  )
 			{
 				SlotID[j++]=target[CrcPost+i];
@@ -236,8 +233,7 @@ static int do_setenvuart_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 		{
 			if( ( (target[CrcPost+i]>='0')&&(target[CrcPost+i]<='9') ) ||
 			    ( (target[CrcPost+i]>='a')&&(target[CrcPost+i]<='f') ) ||
-			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') ) ||
-			    ( !target[CrcPost+i] )
+			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') )
 			  )
 			{
 				NodeID[i]=target[CrcPost+i];
@@ -272,8 +268,7 @@ static int do_setenvuart_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 		{
 			if( ( (target[CrcPost+i]>='0')&&(target[CrcPost+i]<='9') ) ||
 			    ( (target[CrcPost+i]>='a')&&(target[CrcPost+i]<='f') ) ||
-			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') ) ||
-			    ( !target[CrcPost+i] )
+			    ( (target[CrcPost+i]>='A')&&(target[CrcPost+i]<='F') )
 			  )
 			{
 				ChassType[i]=target[CrcPost+i];
@@ -383,7 +378,7 @@ static int do_setenvuart_moduletype(cmd_tbl_t *cmdtp, int flag, int argc,
 	{
 		uartx_write(portnum,_cmd_list[10].cmd,strlen(_cmd_list[10].cmd));
 		memset(buffer, 0, sizeof(buffer));
-		readsize=uartx_read(portnum,buffer,sizeof(buffer));
+		readsize=uartx_read(portnum,buffer,sizeof(buffer)-1);
 
 		//printf("MCU_VERSION:%s\r\n",buffer);
 
@@ -494,7 +489,7 @@ static int do_setenvuart_mcuversion(cmd_tbl_t *cmdtp, int flag, int argc,
 	{
 		uartx_write(portnum,_cmd_list[10].cmd,strlen(_cmd_list[10].cmd));
 		memset(buffer, 0, sizeof(buffer));
-		readsize=uartx_read(portnum,buffer,sizeof(buffer));
+		readsize=uartx_read(portnum,buffer,sizeof(buffer)-1);
 
 		//printf("MCU_VERSION:%s\r\n",buffer);
 
@@ -573,7 +568,7 @@ static int do_setenvuart_runningstate(cmd_tbl_t *cmdtp, int flag, int argc,
 	{
 		uartx_write(portnum,_cmd_list[11].cmd,strlen(_cmd_list[11].cmd));
 		memset(buffer, 0, sizeof(buffer));
-		readsize=uartx_read(portnum,buffer,sizeof(buffer));
+		readsize=uartx_read(portnum,buffer,sizeof(buffer)-1);
 
 		//printf("Runing State:%s\r\n",buffer);
 
