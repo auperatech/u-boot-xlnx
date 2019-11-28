@@ -828,10 +828,10 @@ config CMD_I2C
 	help
 	  I2C support.
 
-config CMD_UART
+config CMD_AUP_UART
 	bool "uart"
 	help
-	  uart support.
+	  Serial port 0 is used as the console,other serial ports are supported.
 
 config CMD_W1
 	depends on W1

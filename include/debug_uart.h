@@ -104,11 +104,11 @@ void printhex4(uint value);
  */
 void printhex8(uint value);
 
-////////////////////////////////////////////////////////////////
+#ifdef CONFIG_CMD_AUP_UART
 int uartx_config(unsigned int portnum,unsigned int baudrate);
 int uartx_write(unsigned int portnum,const char *buff,unsigned int size);
 int uartx_read(unsigned int portnum,char *buff, unsigned int size);
-////////////////////////////////////////////////////////////////
+#endif
 
 #ifdef CONFIG_DEBUG_UART_ANNOUNCE
 #define _DEBUG_UART_ANNOUNCE	printascii("<debug_uart> ");
@@ -184,7 +184,8 @@ int uartx_read(unsigned int portnum,char *buff, unsigned int size);
 		_DEBUG_UART_ANNOUNCE \
 	}
 
-#define ZYNQ_UART_FUNCS \
+#ifdef CONFIG_CMD_AUP_UART
+#define AUP_UART_FUNCS \
 \
 	int uartx_config(unsigned int portnum,unsigned baudrate)\
 	{ \
@@ -200,5 +201,6 @@ int uartx_read(unsigned int portnum,char *buff, unsigned int size);
 	{ \
 		return _zynq_uartx_read(portnum,buff,size); \
 	}
+#endif
 
 #endif
