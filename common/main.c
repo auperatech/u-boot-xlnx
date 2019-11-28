@@ -57,6 +57,10 @@ void main_loop(void)
 //#ifdef CONFIG_V205_WORKAROUND_PETA2019_1_UBOOTENV
 	printf("notice: hardcode workaround for uboot env change since 2018.3\n");
 
+	run_command(" setenvuart uartconf 1 115200; setenvuart moduletype 1 aup_module_type;", 0);
+	run_command("if test ${aup_module_type} = V205_B2; then echo 'aup_module_type V205_B2'; else if test ${aup_module_type} = V205_A1;then echo 'aup_module_type V205_A1'; else echo 'aup_module_type unknow';fi; fi;", 0);
+	run_command(" setenvuart bootinfo 1 aup_CpuMAC aup_ManageMAC aup_SlotID aup_NodeID aup_ChassType;", 0);
+
 	run_command("i2c dev 0; i2c read 0x50 0x14 1 0x10000000; setenvram.bd aup_rootfselect 0x10000000;", 0);
 	run_command("if test ${aup_rootfselect} = 3; then echo 'rootfselect mmcblk0p3'; else if test ${aup_rootfselect} = 2;then echo 'rootfselect mmcblk0p2'; else i2c mw 0x50 0x14 2 1; echo 'change rootfselect from '; printenv aup_rootfselect; echo ' to 2=mmcblk0p2'; setenv aup_rootfselect 2;fi; fi;", 0);
 	run_command("setenv aup_imgname image.ub", 0);
