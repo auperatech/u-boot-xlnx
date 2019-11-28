@@ -297,6 +297,7 @@ static inline int _zynq_uartx_read(unsigned int portnum,char *buff,int size)
 {
 	int getc=0;
 	int realsize=0;
+	int timeout=0;
 
 	if(!buff || !size)
 	{
@@ -309,7 +310,16 @@ static inline int _zynq_uartx_read(unsigned int portnum,char *buff,int size)
 
 		if(getc==-EAGAIN)
 		{
-			break;
+			if(timeout>100)//max timeout 100ms.
+			{
+				break;
+			}
+			else
+			{
+				timeout++;
+				udelay(1000);
+				continue;
+			}
 		}
 
 		*buff++=(char)getc;
