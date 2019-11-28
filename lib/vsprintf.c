@@ -819,8 +819,6 @@ int vprintf(const char *fmt, va_list args)
 }
 #endif
 
-#if 1 //add by Derrick on 20191126
-
 #define USHRT_MAX     ((u16)(~0U))
 #define SHRT_MAX     ((s16)(USHRT_MAX>>1))
 
@@ -1089,7 +1087,6 @@ int sscanf(const char *buf, const char *fmt, ...)
 
      return i;
 }
-#endif //#if 1 //add by Derrick on 20191126
 
 char *simple_itoa(ulong i)
 {
