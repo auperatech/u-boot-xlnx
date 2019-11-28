@@ -159,6 +159,9 @@ obj-$(CONFIG_CMD_ZFS) += zfs.o
 #setenv from ram
 obj-y += setenvram.o
 
+#setenv from uart
+obj-$(CONFIG_CMD_UART) += setenvuart.o
+
 obj-$(CONFIG_CMD_DFU) += dfu.o
 obj-$(CONFIG_CMD_GPT) += gpt.o
 obj-$(CONFIG_CMD_ETHSW) += ethsw.o
