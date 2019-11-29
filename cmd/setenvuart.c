@@ -435,7 +435,7 @@ static int do_setenvuart_moduletype(cmd_tbl_t *cmdtp, int flag, int argc,
 		{
 			if(Mode_Type==2) //V205
 			{
-				snprintf(ModuleVer, MCU_INFO_MAX-1, "V205_B%d",Mode_Version);
+				snprintf(ModuleVer, MCU_INFO_MAX-1, "V205B%d",Mode_Version);
 				VerOK=1;
 				break;
 			}
@@ -445,7 +445,7 @@ static int do_setenvuart_moduletype(cmd_tbl_t *cmdtp, int flag, int argc,
 		{
 			if(Mode_Type==2) //V205
 			{
-				snprintf(ModuleVer, MCU_INFO_MAX-1, "V205_A%d",Mode_Version);
+				snprintf(ModuleVer, MCU_INFO_MAX-1, "V205A%d",Mode_Version);
 				VerOK=1;
 				break;
 			}

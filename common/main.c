@@ -59,7 +59,7 @@ void main_loop(void)
 
 #ifdef CONFIG_CMD_AUP_UART
 	run_command("setenvuart uartconf 1 115200; setenvuart moduletype 1 aup_module_type;", 0);
-	run_command("if test ${aup_module_type} = V205_B2; then echo 'aup_module_type V205_B2'; else if test ${aup_module_type} = V205_A1;then echo 'aup_module_type V205_A1'; else echo 'aup_module_type unknow';fi; fi;", 0);
+	run_command("if test ${aup_module_type} = V205B2; then echo 'aup_module_type V205B2'; else if test ${aup_module_type} = V205A1;then echo 'aup_module_type V205A1'; else echo 'aup_module_type unknow';fi; fi;", 0);
 	run_command("setenvuart bootinfo 1 aup_CpuMAC aup_ManageMAC aup_SlotID aup_NodeID aup_ChassType;", 0);
 #endif
 #ifdef CONFIG_CMD_AUP_RAM
@@ -71,7 +71,7 @@ void main_loop(void)
 	run_command("setenv aup_imgsize 0x2fe0000", 0);
 	run_command("setenv aup_imgofst 0x1000000", 0);
 	run_command("setenv aup_sdboot   \"mmc dev 1 && mmcinfo && load mmc 1:1 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
-	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} && cp 0x10f783ec $fdt_addr 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} && cp 0x10f783ec $fdt_addr 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then bootm ${aup_imgaddr}#conf@2; else bootm ${aup_imgaddr}#conf@1; fi \"", 0);
 	//load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} ; iminfo 0x10000000; (Data Start:   0x10f783ec); fdt addr 0x10f783ec; fdt get value bootargs /chosen bootargs;
 	//mmc dev 0;load mmc 0:3 0x10000000 image.ub ; iminfo 0x10000000; cp 0x10f783ec $fdt_addr 0x100000; fdt addr $fdt_addr; fdt get value bootargs /chosen bootargs; fdt set /chosen bootargs "earlycon console=ttyPS0,115200 clk_ignore_unused root=/dev/mmcblk0p3 rw rootwait"; setexpr bootargs sub "root=/dev/mmcblk0p2" "root=/dev/mmcblk0p4" booti 0x100000e8 - $fdt_addr;
 	run_command("setenv aup_qspi_recover_boot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}\"", 0);
