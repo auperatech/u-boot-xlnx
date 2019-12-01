@@ -838,6 +838,11 @@ config CMD_AUP_RAM
 	help
 	  set environment variable from ram.
 
+config CMD_AUP_IMG_INFO
+	bool "getimginfo"
+	help
+	  get image info from ram.
+
 config CMD_W1
 	depends on W1
 	default y if W1
