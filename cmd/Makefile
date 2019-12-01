@@ -162,6 +162,9 @@ obj-$(CONFIG_CMD_AUP_RAM) += setenvram.o
 #setenv from uart
 obj-$(CONFIG_CMD_AUP_UART) += setenvuart.o
 
+#getimage info from ram
+obj-$(CONFIG_CMD_AUP_IMG_INFO) += getimginfo.o
+
 obj-$(CONFIG_CMD_DFU) += dfu.o
 obj-$(CONFIG_CMD_GPT) += gpt.o
 obj-$(CONFIG_CMD_ETHSW) += ethsw.o

@@ -726,5 +726,7 @@ static char setenvuart_help_text[] =
 U_BOOT_CMD(
 	setenvuart,	8,	1,	do_setenvuart,
 	"set environment variable from uart",
+#ifdef CONFIG_SYS_LONGHELP
 	setenvuart_help_text
+#endif
 );
