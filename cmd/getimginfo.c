@@ -108,7 +108,7 @@ int do_getimginfo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	addr = (void *)simple_strtoul(argv[1], NULL, 16);
 
-	if( !addr || !strlen(argv[2]) )
+	if( !addr )
 	{
 		return CMD_RET_USAGE;
 	}
@@ -157,7 +157,7 @@ U_BOOT_CMD(
 	"get image info environment-variable from ram",
 #ifdef CONFIG_SYS_LONGHELP
 	"ramaddr name Addr {len};\n"
-	"- example: getiminfo 0x10000000 name Addr {len};\n"
+	"- example: getimginfo 0x10000000 name Addr {len};\n"
 #endif
 );
 
