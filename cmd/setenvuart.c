@@ -450,7 +450,13 @@ static int do_setenvuart_moduletype(cmd_tbl_t *cmdtp, int flag, int argc,
 				break;
 			}
 		}
+	}
 
+	if(!VerOK)
+	{
+		snprintf(ModuleVer, MCU_INFO_MAX-1, "V205A%d",Mode_Version);
+		VerOK=1;
+		printf("MCU not ack,Force set V205 is A1.\r\n");
 	}
 
 	if( VerOK )
