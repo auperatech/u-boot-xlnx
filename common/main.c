@@ -62,6 +62,11 @@ void main_loop(void)
 	run_command("if test ${aup_module_type} = V205B2; then echo 'aup_module_type V205B2'; else if test ${aup_module_type} = V205A1;then echo 'aup_module_type V205A1'; else echo 'aup_module_type unknow';fi; fi;", 0);
 	run_command("setenvuart bootinfo 1 aup_CpuMAC aup_ManageMAC aup_SlotID aup_NodeID aup_ChassType;", 0);
 #endif
+
+#ifdef CONFIG_CMD_AUP_NODE_BOOT_CLIENT
+	run_command("if test ${aup_module_type} = V205B2; then nodebootclient nodebootinfo ${aup_SlotID} ${aup_NodeID} ${aup_ManageMAC} ${aup_CpuMAC} aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1 aup_dns2 aup_hostip aup_ntp_server aup_syslog_server aup_syslog_server_port;else if test ${aup_module_type} = V205A1;then echo 'V205A1 u-boot is't support nodebootclient command.'; else echo 'unknow u-boot is't support nodebootclient command';fi; fi;", 0);
+#endif
+
 #ifdef CONFIG_CMD_AUP_RAM
 	run_command("i2c dev 0; i2c read 0x50 0x14 1 0x10000000; setenvram.bd aup_rootfselect 0x10000000;", 0);
 #endif

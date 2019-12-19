@@ -165,6 +165,9 @@ obj-$(CONFIG_CMD_AUP_UART) += setenvuart.o
 #getimage info from ram
 obj-$(CONFIG_CMD_AUP_IMG_INFO) += getimginfo.o
 
+#get node boot client info from eth
+obj-$(CONFIG_CMD_AUP_NODE_BOOT_CLIENT) += nodebootclient.o
+
 obj-$(CONFIG_CMD_DFU) += dfu.o
 obj-$(CONFIG_CMD_GPT) += gpt.o
 obj-$(CONFIG_CMD_ETHSW) += ethsw.o

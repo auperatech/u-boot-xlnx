@@ -843,6 +843,12 @@ config CMD_AUP_IMG_INFO
 	help
 	  get image info from ram.
 
+config CMD_AUP_NODE_BOOT_CLIENT
+	bool "nodebootclient"
+	depends on LIB_AUP_CJSON
+	help
+	  get node boot client info set environment variable from eth are supported.
+
 config CMD_W1
 	depends on W1
 	default y if W1
