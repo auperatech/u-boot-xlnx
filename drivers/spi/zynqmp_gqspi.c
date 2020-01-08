@@ -421,7 +421,7 @@ static int zynqmp_qspi_set_speed(struct udevice *bus, uint speed)
 	writel(confr, &regs->confr);
 
 	zynqmp_qspi_set_tapdelay(bus, baud_rate_val);
-	debug("regs=%p, speed=%d\n", priv->regs, plat->speed_hz);
+	printf("[%s] regs=%p, speed=%d\n", __func__, priv->regs, plat->speed_hz);
 
 	return 0;
 }
