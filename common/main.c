@@ -65,8 +65,6 @@ void main_loop(void)
 #endif
 
 #ifdef CONFIG_CMD_AUP_NODE_BOOT_CLIENT
-	//run_command("if test ${aup_module_type} = V205B2; then nodebootclient nodebootinfo ${aup_SlotID} ${aup_NodeID} ${aup_ManageMAC} ${aup_CpuMAC} aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1 aup_dns2 aup_hostip aup_ntp_server aup_syslog_server aup_syslog_server_port;else if test ${aup_module_type} = V205A1;then echo 'V205A1 board not support nodebootclient command.'; else echo 'unknow board not support nodebootclient command';fi; fi;", 0);
-	//run_command("if test ${aup_module_type} = V205B2; then nodebootclient nodebootinfo ${aup_SlotID} ${aup_NodeID} ${aup_ManageMAC} ${aup_CpuMAC} aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1 aup_dns2 aup_hostip aup_ntp_server aup_syslog_server aup_syslog_server_port;else echo 'only V205B2 board support nodebootclient command.'; fi;", 0);
 	env_set("aup_get_nodebootinfo", "\"if test ${aup_module_type} = V205B2; then nodebootclient nodebootinfo ${aup_SlotID} ${aup_NodeID} ${aup_ManageMAC} ${aup_CpuMAC} aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1 aup_dns2 aup_hostip aup_ntp_server aup_syslog_server aup_syslog_server_port; setenv ipaddr ${aup_nodeip}; setenv serverip ${aup_hostip}; else echo 'only V205B2 board support nodebootclient command.'; fi;\"");
 #endif
 
@@ -81,18 +79,13 @@ void main_loop(void)
 	run_command("setenv aup_sdboot   \"mmc dev 1 && mmcinfo && load mmc 1:1 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 #ifdef CONFIG_CMD_AUP_IMG_INFO
 	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} && getimginfo ${aup_imgaddr} fdt@1 aup_fdt1addr aup_fdt1len && echo aup_fdt1addr=$\"{aup_fdt1addr}\" && cp $\"{aup_fdt1addr}\" ${fdt_addr} 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then echo 'V205B? dts 2'; bootm ${aup_imgaddr}#conf@2; else echo 'V205A? dts 1'; bootm ${aup_imgaddr}#conf@1; fi \"", 0);
-	//run_command("mmc dev 1 && mmcinfo && load mmc 1:1 ${aup_imgaddr} ${aup_imgname};getimginfo ${aup_imgaddr} kernel@1 aup_kerneladdr aup_kernellen; getimginfo ${aup_imgaddr} ramdisk@1 aup_ramdiskaddr aup_ramdisklen;getimginfo ${aup_imgaddr} fdt@1 aup_fdt1addr aup_fdt1len;", 0);
 #else
 	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} && cp 0x11143bfc $fdt_addr 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then bootm ${aup_imgaddr}#conf@2; else bootm ${aup_imgaddr}#conf@1; fi \"", 0);
 #endif
-	//load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} ; iminfo 0x10000000; (Data Start:   0x10f783ec); fdt addr 0x10f783ec; fdt get value bootargs /chosen bootargs;
-	//mmc dev 0;load mmc 0:3 0x10000000 image.ub ; iminfo 0x10000000; cp 0x10f783ec $fdt_addr 0x100000; fdt addr $fdt_addr; fdt get value bootargs /chosen bootargs; fdt set /chosen bootargs "earlycon console=ttyPS0,115200 clk_ignore_unused root=/dev/mmcblk0p3 rw rootwait"; setexpr bootargs sub "root=/dev/mmcblk0p2" "root=/dev/mmcblk0p4" booti 0x100000e8 - $fdt_addr;
-	run_command("setenv aup_qspi_recover_boot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/ram'; setexpr bootargs sub 'root=/dev/mmcblk0p3' 'root=/dev/ram'; bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_qspi_recover_boot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/ram'; setexpr bootargs sub 'root=/dev/mmcblk0p3' 'root=/dev/ram'; if test ${aup_module_type} = V205B2; then echo 'V205B? dts 2'; bootm ${aup_imgaddr}#conf@2; else echo 'V205A? dts 1'; bootm ${aup_imgaddr}#conf@1; fi \"", 0);
 	run_command("setenv aup_qspiboot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}\"", 0);
-	//run_command("setenv aup_qspiboot1 \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}#conf@1\"", 0);
-	//run_command("setenv aup_qspiboot2 \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} ${aup_imgsize} && bootm ${aup_imgaddr}#conf@2\"", 0);
 	run_command("setenv aup_qspiboot  \"run aup_emmcboot || run aup_qspi_recover_boot\"", 0);
-	run_command("setenv aup_usbboot \"usb start && load usb 0 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
+	run_command("setenv aup_usbboot \"usb start && load usb 0 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr} \"", 0);
 	run_command("setenv aup_tftpboot \"setenv ethact eth0 && setenv serverip 192.168.1.254 && setenv ipaddr 192.168.1.250 && tftpboot ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 	run_command("setenv aup_boottry \"for target in  qspi sd emmc usb tftp; do run aup_${target}boot; done\"", 0);
 	run_command("setenv bootcmd \"run aup_${modeboot}\"", 0);
