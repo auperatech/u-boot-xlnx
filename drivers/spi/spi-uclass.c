@@ -61,7 +61,6 @@ int dm_spi_claim_bus(struct udevice *dev)
 	}
 	if (!speed)
 		speed = SPI_DEFAULT_SPEED_HZ;
-		speed = 108000000;	//zzz++ hard code for v205 qspi speed 108M
 	if (speed != slave->speed) {
 		int ret = spi_set_speed_mode(bus, speed, slave->mode);
 
