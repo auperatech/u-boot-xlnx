@@ -65,7 +65,8 @@ void main_loop(void)
 #endif
 
 #ifdef CONFIG_CMD_AUP_NODE_BOOT_CLIENT
-	env_set("aup_get_nodebootinfo", "\"if test ${aup_module_type} = V205B2; then nodebootclient nodebootinfo ${aup_SlotID} ${aup_NodeID} ${aup_ManageMAC} ${aup_CpuMAC} aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1 aup_dns2 aup_hostip aup_ntp_server aup_syslog_server aup_syslog_server_port; setenv ipaddr ${aup_nodeip}; setenv serverip ${aup_hostip}; else echo 'only V205B2 board support nodebootclient command.'; fi;\"");
+	env_set("aup_get_nodebootinfo", "nodebootclient nodebootinfo ${aup_SlotID} ${aup_NodeID} ${aup_ManageMAC} ${aup_CpuMAC} aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1 aup_dns2 aup_hostip aup_ntp_server aup_syslog_server aup_syslog_server_port aup_dhcp; setenv ipaddr ${aup_nodeip}; setenv serverip ${aup_hostip};");
+	run_command("run aup_get_nodebootinfo;", 0);
 #endif
 
 #ifdef CONFIG_CMD_AUP_RAM
