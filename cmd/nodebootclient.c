@@ -46,6 +46,25 @@ extern void eth_parse_enetaddr(const char *addr, uint8_t *enetaddr);
 
 static uchar net_pkt_buf[(PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN];
 
+void DeleteBlank (char *_str)
+{
+    int i,j;
+
+	j=0;
+    for(i=0;;i++)
+    {
+        if (_str[i]=='\0')
+        {
+            break;
+        }
+
+        if( (_str[i]!=' ')&&(_str[i]!='\t') )
+        {
+            _str[j]=_str[i];
+            j++;
+        }
+    }
+}
 
 int GetcJSONArrayValue(cJSON * cJSON_Playload, char StrKey[], uint8_t * rArray, uint8_t size)
 {
@@ -89,6 +108,7 @@ int GetNodeBootInfoHandler(char *PlayLoad,int argc,char * const argv[])
 	int     err=0;
 	char    DlAddress[1500];
 	int 	ret=-1;
+	char    Dhcp_static[256];
 
 	cJSON * cJSON_PlayLoad = cJSON_Parse(PlayLoad);
 	if ( !cJSON_PlayLoad )
@@ -113,8 +133,15 @@ int GetNodeBootInfoHandler(char *PlayLoad,int argc,char * const argv[])
 	else
 	{
 		memcpy(DlAddress,cJSON_DLaddress->valuestring,strlen(cJSON_DLaddress->valuestring));
+		if(!strlen(DlAddress) )
+		{
+			memcpy(DlAddress,"x",strlen("x"));
+		}
+		else
+		{
+			DeleteBlank(DlAddress);
+		}
 	}
-
 
 	memset(ArrayStr,0,sizeof(ArrayStr));
 	memcpy(ArrayStr,"mask",strlen("mask"));
@@ -187,6 +214,25 @@ int GetNodeBootInfoHandler(char *PlayLoad,int argc,char * const argv[])
 		syslog_server_port=cJSON_GetNumber->valueint;
 	}
 
+	memset(Dhcp_static,0,sizeof(Dhcp_static));
+	cJSON * cJSON_GetDhcpVal = cJSON_GetObjectItem(cJSON_PlayLoad, "use_dhcp");
+	if ( !cJSON_IsNumber(cJSON_GetDhcpVal) )
+	{
+		memcpy(Dhcp_static,"static",strlen("static"));
+	}
+	else
+	{
+		if(cJSON_GetDhcpVal->valueint==1)
+		{
+			memcpy(Dhcp_static,"dhcp",strlen("dhcp"));
+		}
+
+		if(cJSON_GetDhcpVal->valueint==0)
+		{
+			memcpy(Dhcp_static,"static",strlen("static"));
+		}
+	}
+
 	cJSON_Delete(cJSON_PlayLoad);
 
 	if(!err)
@@ -201,8 +247,8 @@ int GetNodeBootInfoHandler(char *PlayLoad,int argc,char * const argv[])
 		printf("%d.%d.%d.%d ", host[0], host[1], host[2], host[3]);
 		printf("%d.%d.%d.%d ", ntp_server[0], ntp_server[1], ntp_server[2], ntp_server[3]);
 		printf("%d.%d.%d.%d ", syslog_server[0], syslog_server[1], syslog_server[2], syslog_server[3]);
-		printf("%d\n", syslog_server_port);
-
+		printf("%d", syslog_server_port);
+		printf(" %s\n", Dhcp_static);
 
 		if(argc)
 		{
@@ -303,6 +349,16 @@ int GetNodeBootInfoHandler(char *PlayLoad,int argc,char * const argv[])
 			argc -= 1;
 			argv += 1;
 		}
+
+		if(argc)
+		{
+			memset(ArrayStr,0,sizeof(ArrayStr));
+			snprintf(ArrayStr, sizeof(ArrayStr)-1, "%s", Dhcp_static);
+			env_set(argv[0], ArrayStr);
+			printf("%s=%s\n",argv[0],ArrayStr);
+			argc -= 1;
+			argv += 1;
+		}
 	}
 
 	return ret;
@@ -362,7 +418,6 @@ int32_t RawSocketVerifyPlayLoad(char * SrcPayLoad )
 	}
 
 	cJSON_Delete(cJSON_PlayLoad);
-
 	return 0;
 }
 
@@ -410,7 +465,6 @@ int32_t RawSocketVerifyPacket(uchar *p)
 			return -1;
 		}
 	}
-
 	return 0;
 }
 
@@ -421,7 +475,6 @@ static int do_nodebootclient_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 	char raw_buffer[1536] = {0};
 	char playload[1536] = {0};
 	unsigned int playload_len = {0};
-	unsigned int slot_id,node_id;
 	unsigned char dest_mac[6];
 	unsigned char src_mac[6];
 	int rc;
@@ -437,7 +490,7 @@ static int do_nodebootclient_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 	}
 
-	slot_id = (unsigned int)simple_strtol(argv[1], NULL, 10);
+	module_id = (unsigned int)simple_strtol(argv[1], NULL, 10);
     node_id = (unsigned int)simple_strtol(argv[2], NULL, 10);
 
 	rc=0;
@@ -467,7 +520,7 @@ static int do_nodebootclient_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 				"\"node_id\":%u"
 				"}"
 				, _cmd_list[0].cmd
-				, slot_id
+				, module_id
 				, node_id
 				);
 
@@ -552,7 +605,7 @@ static int do_nodebootclient_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 
 	TimeOut=1;
 	VerifOK=0;
-	for(i=0;i<5;i++)
+	for(i=0;i<15;i++)
 	{
 		if(TimeOut)
 		{
@@ -635,7 +688,7 @@ static int do_nodebootclient_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 
 
 static cmd_tbl_t ethraw_commands[] = {
-	U_BOOT_CMD_MKENT(nodebootinfo, 15, 1, do_nodebootclient_bootinfo, "", "")
+	U_BOOT_CMD_MKENT(nodebootinfo, 16, 1, do_nodebootclient_bootinfo, "", "")
 };
 
 static int do_nodebootclient(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -672,7 +725,7 @@ static char nodebootclient_help_text[] =
 #endif
 
 U_BOOT_CMD(
-	nodebootclient,	16,	1,	do_nodebootclient,
+	nodebootclient,	17,	1,	do_nodebootclient,
 	"get node boot client info set environment variable from eth",
 #ifdef CONFIG_SYS_LONGHELP
 	nodebootclient_help_text
