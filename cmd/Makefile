@@ -158,10 +158,10 @@ obj-$(CONFIG_CMD_ZIP) += zip.o
 obj-$(CONFIG_CMD_ZFS) += zfs.o
 
 #setenv from ram
-obj-$(CONFIG_CMD_AUP_RAM) += setenvram.o
+obj-$(CONFIG_CMD_AUP_RAM_ENV) += setenvram.o
 
 #setenv from uart
-obj-$(CONFIG_CMD_AUP_UART) += setenvuart.o
+obj-$(CONFIG_CMD_AUP_UART_ENV) += setenvuart.o
 
 #getimage info from ram
 obj-$(CONFIG_CMD_AUP_IMG_INFO) += getimginfo.o

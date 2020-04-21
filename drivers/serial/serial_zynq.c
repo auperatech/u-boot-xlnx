@@ -234,7 +234,7 @@ DEBUG_UART_FUNCS
 
 #endif
 
-#ifdef CONFIG_CMD_AUP_UART
+#ifdef CONFIG_CMD_AUP_UART_ENV
 static inline int _zynq_uartx_conf(unsigned int portnum,unsigned int baudrate)
 {
 	struct uart_zynq *regs_uart;
@@ -356,4 +356,4 @@ static inline int _zynq_uartx_write(unsigned int portnum,const char *buff,unsign
 }
 
 AUP_UART_FUNCS
-#endif	//#ifdef CONFIG_CMD_AUP_UART
+#endif	//#ifdef CONFIG_CMD_AUP_UART_ENV

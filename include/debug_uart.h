@@ -104,7 +104,7 @@ void printhex4(uint value);
  */
 void printhex8(uint value);
 
-#ifdef CONFIG_CMD_AUP_UART
+#ifdef CONFIG_CMD_AUP_UART_ENV
 int uartx_config(unsigned int portnum,unsigned int baudrate);
 int uartx_write(unsigned int portnum,const char *buff,unsigned int size);
 int uartx_read(unsigned int portnum,char *buff, unsigned int size);
@@ -184,7 +184,7 @@ int uartx_read(unsigned int portnum,char *buff, unsigned int size);
 		_DEBUG_UART_ANNOUNCE \
 	}
 
-#ifdef CONFIG_CMD_AUP_UART
+#ifdef CONFIG_CMD_AUP_UART_ENV
 #define AUP_UART_FUNCS \
 \
 	int uartx_config(unsigned int portnum,unsigned baudrate)\
