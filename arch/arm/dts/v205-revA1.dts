@@ -839,7 +839,12 @@
 			phy-mode = "sgmii";
 			xlnx,ptp-enet-clock = <0x0>;
 			local-mac-address = [00 0a 35 66 3d 52];
-			fixed-link = <0x2 0x1 0x3e8 0x0 0x0>;
+			phy-handle = <0xabcdef>;
+			is-internal-pcspma;
+			phy@0 {
+				reg = <0x0>;
+				phandle = <0xabcdef>;
+			};
 		};
 
 		ethernet@ff0e0000 {
@@ -858,6 +863,7 @@
 			phy-mode = "sgmii";
 			xlnx,ptp-enet-clock = <0x0>;
 			fixed-link = <0x3 0x1 0x3e8 0x0 0x0>;
+			is-internal-pcspma;
 		};
 
 		gpio@ff0a0000 {
