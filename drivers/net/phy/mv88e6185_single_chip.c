@@ -162,6 +162,8 @@ static int mv88e6185_single_soft_reset(struct phy_device *phydev)
 		reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
 		if (reg >= 0 && ((reg & GLOBAL1_CTRL_SWRESET) == 0))	break;
 	}
+
+	return 0;
 }
 
 static int mv88e6185_single_config_aneg(struct phy_device *phydev)
@@ -183,13 +185,12 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 {
 	int swid;
 	int reg;
-	int time;
 
 	printf("call %s\n", __FUNCTION__);
 
 	swid = mv88e6185_single_chip_get_switch_id(phydev);
 	if (swid != PORT_SWITCH_ID_6185){
-		printf("swid = 0x%x, not 0x%x\n", __FUNCTION__, swid, PORT_SWITCH_ID_6185);
+		printf("[%s] swid = 0x%x, not 0x%x\n", __FUNCTION__, swid, PORT_SWITCH_ID_6185);
 		return -1;
 	}
 
@@ -230,14 +231,14 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 	reg = mv88e6185_single_chip_read(phydev, 0x16, PORT_REG_PHYS_CTRL);
    	printf ("[%s] port6 original PHY ctrl: 0x%x\n", __FUNCTION__, reg);
 	reg &= ~(PORT_REG_PHYS_CTRL_SPD_MASK | PORT_REG_PHYS_CTRL_FC_VALUE);
-	reg |= (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD1000);
+	reg |= (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_VALUE | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_LINK_VALUE | PORT_REG_PHYS_CTRL_LINK_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD1000);
 	mv88e6185_single_chip_write(phydev, 0x16, PORT_REG_PHYS_CTRL, reg);
    	printf ("[%s] port6 set PHY ctrl= 0x%x\n", __FUNCTION__, reg);
 
 	reg = mv88e6185_single_chip_read(phydev, 0x19, PORT_REG_PHYS_CTRL);
    	printf ("[%s] port9 original PHY ctrl: 0x%x\n", __FUNCTION__, reg);
 	reg &= ~(PORT_REG_PHYS_CTRL_SPD_MASK | PORT_REG_PHYS_CTRL_FC_VALUE);
-	reg |= (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD1000);
+	reg |= (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_VALUE | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_LINK_VALUE | PORT_REG_PHYS_CTRL_LINK_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD1000);
 	mv88e6185_single_chip_write(phydev, 0x19, PORT_REG_PHYS_CTRL, reg);
    	printf ("[%s] port6 set PHY ctrl= 0x%x\n", __FUNCTION__, reg);
 	udelay(500000);
@@ -267,29 +268,44 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 	return 0;
 }
 
+static int mv88e6185_single_fix_link(struct phy_device *phydev)
+{
+	int reg;
+
+	if( phydev->flags&PORT_REG_PHYS_CTRL_LINK_FORCE )
+	{
+		printf("call %s\n", __FUNCTION__);
+		reg = (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_VALUE | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD_MASK);
+		mv88e6185_single_chip_write(phydev, 0x16, PORT_REG_PHYS_CTRL, reg);
+		mv88e6185_single_chip_write(phydev, 0x19, PORT_REG_PHYS_CTRL, reg);
+		udelay(30*1000);//>=15ms
+		reg = (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_VALUE | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_LINK_VALUE | PORT_REG_PHYS_CTRL_LINK_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD1000);
+		mv88e6185_single_chip_write(phydev, 0x16, PORT_REG_PHYS_CTRL, reg);
+		mv88e6185_single_chip_write(phydev, 0x19, PORT_REG_PHYS_CTRL, reg);
+	}
+}
 
 static int mv88e6185_single_update_link(struct phy_device *phydev)
 {
 	int val;
 	int link = 0, link6 = 0, link7 = 0, link8 = 0, link9 = 0;
-
 	printf("call %s\n", __FUNCTION__);
 
 	val = mv88e6185_single_chip_read(phydev, 0x16, PORT_REG_STATUS);
 	if (val < 0) return 0;
-	link6 = (val & PORT_REG_STATUS_LINK) == 0;
+	link6 = (val & PORT_REG_STATUS_LINK) != 0;
 
 	val = mv88e6185_single_chip_read(phydev, 0x17, PORT_REG_STATUS);
 	if (val < 0) return 0;
-	link7 = (val & PORT_REG_STATUS_LINK) == 0;
+	link7 = (val & PORT_REG_STATUS_LINK) != 0;
 
 	val = mv88e6185_single_chip_read(phydev, 0x18, PORT_REG_STATUS);
 	if (val < 0) return 0;
-	link8 = (val & PORT_REG_STATUS_LINK) == 0;
+	link8 = (val & PORT_REG_STATUS_LINK) != 0;
 
 	val = mv88e6185_single_chip_read(phydev, 0x19, PORT_REG_STATUS);
 	if (val < 0) return 0;
-	link9 = (val & PORT_REG_STATUS_LINK) == 0;
+	link9 = (val & PORT_REG_STATUS_LINK) != 0;
 
 	printf("phydev port=%d, link status 6/7/8/9=%d/%d/%d/%d\n", phydev->port, link6, link7, link8, link9);
 
@@ -313,6 +329,9 @@ static int mv88e6185_single_update_link(struct phy_device *phydev)
 static int mv88e6185_single_startup(struct phy_device *phydev)
 {
 	printf("call %s\n", __FUNCTION__);
+
+	mv88e6185_single_fix_link(phydev);
+
 	return mv88e6185_single_update_link(phydev);
 }
 
@@ -330,7 +349,7 @@ static struct phy_driver mv88e6185_single_chip_driver = {
 
 int phy_mv88e6185_single_chip_init(void)
 {
-	printf("call %s, mv88e6185_single_chip_driver @0x%p\n", __FUNCTION__, mv88e6185_single_chip_driver);
+	printf("call %s, mv88e6185_single_chip_driver @0x%x\n", __FUNCTION__, mv88e6185_single_chip_driver.uid);
 	phy_register(&mv88e6185_single_chip_driver);
 
 	return 0;

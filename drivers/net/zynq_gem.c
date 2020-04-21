@@ -513,6 +513,20 @@ static int zynq_gem_init(struct udevice *dev)
 		break;
 	}
 
+	 if(priv->phydev->drv->uid==0x088e6185)
+	 {
+		priv->phydev->flags |= BIT(4);//switch Set Fix link.
+		ret = phy_startup(priv->phydev);
+		priv->phydev->flags &= ~BIT(4);
+		if (ret)
+			return ret;
+
+		if (!priv->phydev->link) {
+			printf("%s: No link.\n", priv->phydev->dev->name);
+			return -1;
+		}
+	 }
+
 	ret = clk_set_rate(&priv->clk, clk_rate);
 	if (IS_ERR_VALUE(ret) && ret != (unsigned long)-ENOSYS) {
 		dev_err(dev, "failed to set tx clock rate\n");
