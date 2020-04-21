@@ -807,7 +807,7 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 
 	printf("ZYNQ GEM: %lx, phyaddr %x, phy_inerface %x, interface %s, max_speed %d, int_pcs %d \n", (ulong)priv->iobase,
 	       priv->phyaddr, pdata->phy_interface, phy_string_for_interface(priv->interface), priv->max_speed, priv->int_pcs);
-
+#ifdef	CONFIG_V205_HW_RST_PHY
 	gpio_phy_hw_rst = 72;
 	/* grab the pin before we tweak it */
 	ret = gpio_request(gpio_phy_hw_rst, "cmd_gpio");
@@ -827,7 +827,7 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 		printf("hardware gpio %d reset phy!\n", gpio_phy_hw_rst);
 		phy_hw_reseted = true;
 	}
-
+#endif
 	return 0;
 }
 
