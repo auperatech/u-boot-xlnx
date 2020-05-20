@@ -3,10 +3,17 @@ CONFIG_SYS_CONFIG_NAME="xilinx_zynqmp_zcu106"
 CONFIG_ARCH_ZYNQMP=y
 CONFIG_SYS_TEXT_BASE=0x8000000
 CONFIG_SYS_MALLOC_F_LEN=0x8000
+<<<<<<< HEAD:configs/v205_revA1_defconfig
 CONFIG_SPL_SPI_FLASH_SUPPORT=y
 CONFIG_SPL_SPI_SUPPORT=y
 CONFIG_IDENT_STRING=" ZynqMP v205 revA1"
 CONFIG_ZYNQMP_QSPI=y
+=======
+CONFIG_SPL=y
+CONFIG_DEBUG_UART_BASE=0xff000000
+CONFIG_DEBUG_UART_CLOCK=100000000
+CONFIG_IDENT_STRING=" ZynqMP v205"
+>>>>>>> 0aece0e13f... rename v205 revA1 to v205, as ning found show revA1/B2 may mismatch of real hardware board:configs/v205_defconfig
 CONFIG_ZYNQMP_USB=y
 CONFIG_SPI_GENERIC=y
 CONFIG_ZYNQ_I2C0=y
@@ -63,7 +70,11 @@ CONFIG_CMD_AES=y
 CONFIG_CMD_EXT4_WRITE=y
 # CONFIG_SPL_ISO_PARTITION is not set
 CONFIG_SPL_OF_CONTROL=y
+<<<<<<< HEAD:configs/v205_revA1_defconfig
 CONFIG_OF_EMBED=y
+=======
+CONFIG_DEFAULT_DEVICE_TREE="v205"
+>>>>>>> 0aece0e13f... rename v205 revA1 to v205, as ning found show revA1/B2 may mismatch of real hardware board:configs/v205_defconfig
 CONFIG_ENV_IS_IN_FAT=y
 CONFIG_ENV_FAT_DEVICE_AND_PART="1:1"
 CONFIG_NET_RANDOM_ETHADDR=y
