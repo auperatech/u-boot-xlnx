@@ -497,7 +497,7 @@ static int do_nodebootclient_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 	rc = sscanf(argv[3], "%hx:%hx:%hx:%hx:%hx:%hx", &dest_mac[0], &dest_mac[1],&dest_mac[2], &dest_mac[3], &dest_mac[4], &dest_mac[5]);
 	if (rc!=6)
 	{
-		printf("mac is error.\n");
+		printf("dest mac is error. [%s]\n", argv[3]);
 		return -1;
 	}
 	memcpy(target_mac,dest_mac,sizeof(dest_mac));
@@ -506,7 +506,7 @@ static int do_nodebootclient_bootinfo(cmd_tbl_t *cmdtp, int flag, int argc,
 	rc = sscanf(argv[4], "%hx:%hx:%hx:%hx:%hx:%hx", &src_mac[0], &src_mac[1],&src_mac[2], &src_mac[3], &src_mac[4], &src_mac[5]);
 	if (rc!=6)
 	{
-		printf("mac is error.\n");
+		printf("src mac is error. [%s]\n", argv[4]);
 		return -1;
 	}
 	memcpy(source_mac,src_mac,sizeof(src_mac));
@@ -720,7 +720,7 @@ static int do_nodebootclient(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 static char nodebootclient_help_text[] =
 	"command slot-id node-id dest-mac src-mac environment-variables(aup_nodeip,aup_dl_address,aup_mask,aup_gateway,aup_dns1,\n"
 	"\taup_dns2,aup_hostip,aup_ntp_server,aup_syslog_server,aup_syslog_server_port)\n"
-	"get-node-boot-info 27 0 88:e0:a0:20:73:fe 88:e0:a0:20:72:01 aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1\n"
+	"example: get-node-boot-info 27 0 88:e0:a0:20:73:fe 88:e0:a0:20:72:01 aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1\n"
 	"\taup_dns2 aup_hostip aup_ntp_server aup_syslog_server aup_syslog_server_port";
 #endif
 
