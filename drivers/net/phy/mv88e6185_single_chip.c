@@ -133,12 +133,12 @@ static int mv88e6185_single_chip_write(struct phy_device *phydev, int dev, int r
 static int mv88e6185_single_chip_get_switch_id(struct phy_device *phydev)
 {
 	int res;
-	printf("call %s\n", __FUNCTION__);
+	debug("call %s\n", __FUNCTION__);
 	res = mv88e6185_single_chip_read(phydev, 0x16, PORT_REG_SWITCH_ID);
 	if (res < 0)
 		return res;
 
-	printf("mv88e6185_single_chip_get_switch_id=0x%x\n", res);
+	debug("mv88e6185_single_chip_get_switch_id=0x%x\n", res);
 	return res & 0xfff0;
 }
 
@@ -152,7 +152,7 @@ static int mv88e6185_single_probe(struct phy_device *phydev)
 static int mv88e6185_single_soft_reset(struct phy_device *phydev)
 {
 	int reg, i;
-	printf("call %s\n", __FUNCTION__);
+	debug("call %s\n", __FUNCTION__);
 	reg = mv88e6185_single_chip_read(phydev, DEVADDR_GLOBAL_1, GLOBAL1_CTRL);
 	if (reg < 0) return reg;
 	reg |= GLOBAL1_CTRL_SWRESET;
@@ -168,7 +168,7 @@ static int mv88e6185_single_soft_reset(struct phy_device *phydev)
 
 static int mv88e6185_single_config_aneg(struct phy_device *phydev)
 {
-	printf("call %s\n", __FUNCTION__);
+	debug("call %s\n", __FUNCTION__);
 	/*1000baseX auto nego*/
 	phydev->autoneg = AUTONEG_DISABLE;
 	phydev->speed = SPEED_1000;
@@ -186,7 +186,7 @@ static int mv88e6185_single_config(struct phy_device *phydev)
 	int swid;
 	int reg;
 
-	printf("call %s\n", __FUNCTION__);
+	debug("call %s\n", __FUNCTION__);
 
 	swid = mv88e6185_single_chip_get_switch_id(phydev);
 	if (swid != PORT_SWITCH_ID_6185){
@@ -274,7 +274,7 @@ static int mv88e6185_single_fix_link(struct phy_device *phydev)
 
 	if( phydev->flags&PORT_REG_PHYS_CTRL_LINK_FORCE )
 	{
-		printf("call %s\n", __FUNCTION__);
+		debug("call %s\n", __FUNCTION__);
 		reg = (PORT_REG_PHYS_CTRL_PCS_AN_EN | PORT_REG_PHYS_CTRL_PCS_AN_RST | PORT_REG_PHYS_CTRL_FC_VALUE | PORT_REG_PHYS_CTRL_FC_FORCE | PORT_REG_PHYS_CTRL_DUPLEX_VALUE | PORT_REG_PHYS_CTRL_DUPLEX_FORCE | PORT_REG_PHYS_CTRL_SPD_MASK);
 		mv88e6185_single_chip_write(phydev, 0x16, PORT_REG_PHYS_CTRL, reg);
 		mv88e6185_single_chip_write(phydev, 0x19, PORT_REG_PHYS_CTRL, reg);
@@ -289,7 +289,7 @@ static int mv88e6185_single_update_link(struct phy_device *phydev)
 {
 	int val;
 	int link = 0, link6 = 0, link7 = 0, link8 = 0, link9 = 0;
-	printf("call %s\n", __FUNCTION__);
+	debug("call %s\n", __FUNCTION__);
 
 	val = mv88e6185_single_chip_read(phydev, 0x16, PORT_REG_STATUS);
 	if (val < 0) return 0;
@@ -328,7 +328,7 @@ static int mv88e6185_single_update_link(struct phy_device *phydev)
 
 static int mv88e6185_single_startup(struct phy_device *phydev)
 {
-	printf("call %s\n", __FUNCTION__);
+	debug("call %s\n", __FUNCTION__);
 
 	mv88e6185_single_fix_link(phydev);
 
@@ -349,7 +349,7 @@ static struct phy_driver mv88e6185_single_chip_driver = {
 
 int phy_mv88e6185_single_chip_init(void)
 {
-	printf("call %s, mv88e6185_single_chip_driver @0x%x\n", __FUNCTION__, mv88e6185_single_chip_driver.uid);
+	debug("call %s, mv88e6185_single_chip_driver @0x%x\n", __FUNCTION__, mv88e6185_single_chip_driver.uid);
 	phy_register(&mv88e6185_single_chip_driver);
 
 	return 0;
@@ -366,7 +366,7 @@ int get_phy_id(struct mii_dev *bus, int smi_addr, int devad, u32 *phy_id)
 	int phy_reg;
 	int addr, found6185;
 
-	printf("[%s, %s] devad=%d\n", __FILE__, __FUNCTION__, devad);
+	debug("[%s, %s] devad=%d\n", __FILE__, __FUNCTION__, devad);
 
 	phy_reg = bus->read(bus, smi_addr, devad, MII_PHYSID1);
 	if (phy_reg < 0) return -EIO;
