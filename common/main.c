@@ -70,9 +70,12 @@ void main_loop(void)
 #endif
 
 #ifdef CONFIG_CMD_AUP_RAM_ENV
-	run_command("i2c dev 0; i2c read 0x50 0x14 1 0x10000000; setenvram.bd aup_rootfselect 0x10000000;", 0);
+	env_set("aup_get_rootfselect", "i2c dev 0; i2c read 0x50 0x14 1 0x10000000; setenvram.bd aup_rootfselect 0x10000000; if test ${aup_rootfselect} = 3; then echo 'rootfselect mmcblk0p3'; else if test ${aup_rootfselect} = 2;then echo 'rootfselect mmcblk0p2'; else i2c mw 0x50 0x14 2 1; setenv aup_rootfselect 2;fi; fi;");
+	run_command("aup_get_rootfselect", 0);
+#else
+	env_set("aup_get_rootfselect", "setenv aup_rootfselect 2");
+	env_set("aup_rootfselect", "2");
 #endif
-	run_command("if test ${aup_rootfselect} = 3; then echo 'rootfselect mmcblk0p3'; else if test ${aup_rootfselect} = 2;then echo 'rootfselect mmcblk0p2'; else i2c mw 0x50 0x14 2 1; echo 'change rootfselect from '; printenv aup_rootfselect; echo ' to 2=mmcblk0p2'; setenv aup_rootfselect 2;fi; fi;", 0);
 	run_command("setenv aup_imgname image.ub", 0);
 	run_command("setenv aup_imgaddr 0x10000000", 0);
 	run_command("setenv aup_imgsize 0x2fe0000", 0);
