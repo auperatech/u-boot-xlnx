@@ -62,6 +62,7 @@ void main_loop(void)
 	run_command("aup_get_rootfselect", 0);
 #else
 	env_set("aup_rootfselect", "2");
+	env_set("aup_get_rootfselect", "none");
 #endif
 
 #ifdef CONFIG_CMD_AUP_UART_ENV
@@ -76,6 +77,8 @@ void main_loop(void)
 #ifdef CONFIG_CMD_AUP_NODE_BOOT_CLIENT
 	env_set("aup_get_nodebootinfo", "nodebootclient nodebootinfo ${aup_SlotID} ${aup_NodeID} ${aup_ManageMAC} ${aup_CpuMAC} aup_nodeip aup_dl_address aup_mask aup_gateway aup_dns1 aup_dns2 aup_hostip aup_ntp_server aup_syslog_server aup_syslog_server_port aup_dhcp; setenv ipaddr ${aup_nodeip}; setenv serverip ${aup_hostip};");
 	run_command("run aup_get_nodebootinfo;", 0);
+#else
+	env_set("aup_get_nodebootinfo", "none");
 #endif
 
 	run_command("setenv aup_imgname image.ub", 0);
@@ -85,9 +88,9 @@ void main_loop(void)
 	run_command("if test ${aup_module_type} = XU30; then setenv aup_imgsize 0x6fe0000; else setenv aup_imgsize 0x2fe0000; fi;", 0);
 	run_command("setenv aup_sdboot   \"mmc dev 1 && mmcinfo && load mmc 1:1 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 #ifdef CONFIG_CMD_AUP_IMG_INFO
-	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} && getimginfo ${aup_imgaddr} fdt@1 aup_fdt1addr aup_fdt1len && echo aup_fdt1addr=$\"{aup_fdt1addr}\" && cp $\"{aup_fdt1addr}\" ${fdt_addr} 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then echo 'V205B? dts 2'; bootm ${aup_imgaddr}#conf@2; else echo 'V205A? dts 1'; bootm ${aup_imgaddr}#conf@1; fi \"", 0);
+	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:$\"{aup_rootfselect}\" ${aup_imgaddr} ${aup_imgname} && getimginfo ${aup_imgaddr} fdt@1 aup_fdt1addr aup_fdt1len && echo aup_fdt1addr=$\"{aup_fdt1addr}\" && cp $\"{aup_fdt1addr}\" ${fdt_addr} 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then echo 'V205B? dts 2'; bootm ${aup_imgaddr}#conf@2; else echo 'V205A? dts 1'; bootm ${aup_imgaddr}#conf@1; fi \"", 0);
 #else
-	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:${aup_rootfselect} ${aup_imgaddr} ${aup_imgname} && cp 0x11143bfc $fdt_addr 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then bootm ${aup_imgaddr}#conf@2; else bootm ${aup_imgaddr}#conf@1; fi \"", 0);
+	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:$\"{aup_rootfselect}\" ${aup_imgaddr} ${aup_imgname} && cp 0x11143bfc $fdt_addr 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then bootm ${aup_imgaddr}#conf@2; else bootm ${aup_imgaddr}#conf@1; fi \"", 0);
 #endif
 	run_command("setenv aup_qspi_recover_boot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} $\"{aup_imgsize}\" && setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/ram'; setexpr bootargs sub 'root=/dev/mmcblk0p3' 'root=/dev/ram'; if test ${aup_module_type} = V205B2; then echo 'V205B? dts 2'; bootm ${aup_imgaddr}#conf@2; else echo 'V205A? dts 1'; bootm ${aup_imgaddr}#conf@1; fi \"", 0);
 	run_command("setenv aup_qspi_boot \"sf probe && sf read ${aup_imgaddr} ${aup_imgofst} $\"{aup_imgsize}\" && bootm ${aup_imgaddr}\"", 0);
