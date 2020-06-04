@@ -828,12 +828,12 @@ config CMD_I2C
 	help
 	  I2C support.
 
-config CMD_AUP_UART
-	bool "uart"
+config CONFIG_CMD_AUP_UART_ENV
+	bool "envuart"
 	help
 	  Serial port 0 is used as the console,other serial ports are supported.
 
-config CMD_AUP_RAM
+config CONFIG_CMD_AUP_RAM_ENV
 	bool "envram"
 	help
 	  set environment variable from ram.
