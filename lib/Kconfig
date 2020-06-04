@@ -419,6 +419,7 @@ config SMBIOS_PRODUCT_NAME
 
 config LIB_AUP_CJSON
 	bool "libcjson"
+	default n
 	help
 	  The lib is cjson.
 
