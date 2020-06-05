@@ -832,7 +832,7 @@ config CONFIG_CMD_AUP_UART_ENV
 	bool "envuart"
 	default y
 	help
-	  Serial port 0 is used as the console,other serial ports are supported.
+	  Serial port 1 ttyPS1 connect to MCU, is used for setenvuart, other serial ports are supported.
 
 config CONFIG_CMD_AUP_RAM_ENV
 	bool "envram"
