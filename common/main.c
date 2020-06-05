@@ -58,8 +58,8 @@ void main_loop(void)
 	printf("notice: hardcode workaround for uboot env change since 2018.3\n");
 
 #ifdef CONFIG_CMD_AUP_RAM_ENV
-	env_set("aup_get_rootfselect", "setenv aup_rootfselect 2; i2c dev 0 && i2c read 0x50 0x14 1 0x10000000 && setenvram.bd aup_rootfselect 0x10000000 && if test ${aup_rootfselect} = 3; then echo 'rootfselect mmcblk0p3'; else if test ${aup_rootfselect} = 2;then echo 'rootfselect mmcblk0p2'; else echo 'no rootfselect, use default mmcblk0p2. (set it 2 by cmd: i2c mw 0x50 0x14 2 1)'; fi; fi;");
-	run_command("aup_get_rootfselect", 0);
+	env_set("aup_get_rootfselect", "setenv aup_rootfselect 2; i2c dev 0 && i2c read 0x50 0x14 1 0x10000000 && setenvram.bd aup_rootfselect 0x10000000 && if test ${aup_rootfselect} = 3; then echo 'rootfselect mmcblk0p3'; setenv aup_rootfselect 3; else if test ${aup_rootfselect} = 2;then echo 'rootfselect mmcblk0p2'; else echo 'no rootfselect, use default mmcblk0p2. (set it 2 by cmd: i2c mw 0x50 0x14 2 1)'; fi; fi;");
+	run_command("run aup_get_rootfselect", 0);
 #else
 	env_set("aup_rootfselect", "2");
 	env_set("aup_get_rootfselect", "none");
