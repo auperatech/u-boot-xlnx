@@ -828,13 +828,13 @@ config CMD_I2C
 	help
 	  I2C support.
 
-config CONFIG_CMD_AUP_UART_ENV
+config CMD_AUP_UART_ENV
 	bool "envuart"
 	default y
 	help
 	  Serial port 1 ttyPS1 connect to MCU, is used for setenvuart, other serial ports are supported.
 
-config CONFIG_CMD_AUP_RAM_ENV
+config CMD_AUP_RAM_ENV
 	bool "envram"
 	default y
 	help
