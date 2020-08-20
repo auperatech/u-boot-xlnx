@@ -1295,6 +1295,12 @@ config CMD_MII
 	help
 	  Enable MII utility commands.
 
+config CMD_AUP_MII
+	bool "aup_mii"
+    default y
+	help
+	  Enable AUPERA MII utility commands.
+
 config CMD_PING
 	bool "ping"
 	help
