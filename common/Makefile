@@ -31,6 +31,7 @@ obj-$(CONFIG_CMD_BEDBUG) += bedbug.o
 obj-$(CONFIG_$(SPL_TPL_)OF_LIBFDT) += fdt_support.o
 obj-$(CONFIG_MII) += miiphyutil.o
 obj-$(CONFIG_CMD_MII) += miiphyutil.o
+obj-$(CONFIG_CMD_AUP_MII) += miiphyutil.o
 obj-$(CONFIG_PHYLIB) += miiphyutil.o
 
 ifdef CONFIG_USB
