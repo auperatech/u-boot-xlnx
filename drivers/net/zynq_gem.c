@@ -470,6 +470,7 @@ static int zynq_gem_init(struct udevice *dev)
 		priv->init++;
 	}
 
+	if (priv->phyaddr != PHY_MAX_ADDR + 1){		//it is not a fixed-link
 	ret = phy_startup(priv->phydev);
 	if (ret)
 		return ret;
@@ -477,6 +478,7 @@ static int zynq_gem_init(struct udevice *dev)
 	if (!priv->phydev->link) {
 		printf("%s: No link.\n", priv->phydev->dev->name);
 		return -1;
+	}
 	}
 
 	nwconfig = ZYNQ_GEM_NWCFG_INIT;
@@ -496,7 +498,11 @@ static int zynq_gem_init(struct udevice *dev)
 		       &regs->pcscntrl);
 #endif
 	}
-
+	if (priv->phyaddr == PHY_MAX_ADDR + 1){		//it is not a fixed-link
+		writel(nwconfig | ZYNQ_GEM_NWCFG_SPEED1000,
+		       &regs->nwcfg);
+		clk_rate = ZYNQ_GEM_FREQUENCY_1000;
+	}else{
 	switch (priv->phydev->speed) {
 	case SPEED_1000:
 		writel(nwconfig | ZYNQ_GEM_NWCFG_SPEED1000,
@@ -526,7 +532,7 @@ static int zynq_gem_init(struct udevice *dev)
 			return -1;
 		}
 	 }
-
+	}
 	ret = clk_set_rate(&priv->clk, clk_rate);
 	if (IS_ERR_VALUE(ret) && ret != (unsigned long)-ENOSYS) {
 		dev_err(dev, "failed to set tx clock rate\n");
@@ -792,6 +798,18 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 		priv->max_speed = ofnode_read_u32_default(phandle_args.node,
 							  "max-speed",
 							  SPEED_1000);
+	}else{ /**zzz++ for linux kernel fixed-link　syntax*/
+		u32 cell[5] = {0};	/**example: fixed-link = <3 1 1000 0 0>;*/
+		int err;
+
+		err = dev_read_u32_array(dev, "fixed-link", cell, ARRAY_SIZE(cell));
+		if (! err){
+			printf("!no found phy-handle, %s is a fixed-link speed %d\n", dev->name, cell[2]);
+			//priv->phyaddr = cell[1];
+			priv->phyaddr = PHY_MAX_ADDR + 1;	//as a fixed link flag, no phy addr will be this, in real world
+			//priv->phy_of_node = NULL;
+			priv->max_speed = SPEED_1000;
+		}
 	}
 
 	phy_mode = dev_read_prop(dev, "phy-mode", NULL);
