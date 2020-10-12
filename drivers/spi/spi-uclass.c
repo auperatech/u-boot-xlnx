@@ -350,6 +350,13 @@ int spi_get_bus_and_cs(int busnum, int cs, int speed, int mode,
 			       SPI_DEFAULT_SPEED_HZ / 1000);
 			plat->max_hz = SPI_DEFAULT_SPEED_HZ;
 		}
+
+		if(!mode)//Force QSPI 4bit mode read,Add by Derrick on 20200226
+		{
+			mode = SPI_RX_QUAD;
+			printf("[%s] Force QSPI rx 4 bit mode.\r\n", __FUNCTION__);
+		}
+
 		plat->mode = mode;
 		created = true;
 	} else if (ret) {

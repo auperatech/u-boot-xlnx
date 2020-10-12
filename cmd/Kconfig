@@ -999,6 +999,31 @@ config CMD_I2C
 	help
 	  I2C support.
 
+config CMD_AUP_UART_ENV
+	bool "envuart"
+	default y
+	help
+	  Serial port 1 ttyPS1 connect to MCU, is used for setenvuart, other serial ports are supported.
+
+config CMD_AUP_RAM_ENV
+	bool "envram"
+	default y
+	help
+	  set environment variable from ram.
+
+config CMD_AUP_IMG_INFO
+	bool "getimginfo"
+	default y
+	help
+	  get image info from ram.
+
+config CMD_AUP_NODE_BOOT_CLIENT
+	bool "nodebootclient"
+	default n
+	depends on LIB_AUP_CJSON
+	help
+	  get node boot client info set environment variable from eth are supported.
+
 config CMD_W1
 	depends on W1
 	default y if W1
@@ -1481,6 +1506,12 @@ config CMD_MII
 	  Station Management entity and a managed PHY for providing access
 	  to management parameters and services.
 	  The interface is referred to as the MII management interface.
+
+config CMD_AUP_MII
+	bool "aup_mii"
+    default y
+	help
+	  Enable AUPERA MII utility commands.
 
 config CMD_MDIO
 	bool "mdio"
