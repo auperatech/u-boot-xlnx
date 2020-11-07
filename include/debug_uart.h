@@ -201,8 +201,8 @@ int uartx_read(unsigned int portnum,char *buff, unsigned int size);
 		board_debug_uart_init(); \
 		_debug_uart_init(); \
 		_DEBUG_UART_ANNOUNCE \
-	} \
-\
+	}
+
 #ifdef CONFIG_CMD_AUP_UART_ENV
 #define AUP_UART_FUNCS \
 \
