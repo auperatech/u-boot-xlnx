@@ -830,6 +830,8 @@ config CMD_I2C
 
 config CMD_AUP_UART_ENV
 	bool "envuart"
+        depends on ZYNQ_SERIAL
+        depends on DEBUG_UART_BOARD_INIT
 	default y
 	help
 	  Serial port 1 ttyPS1 connect to MCU, is used for setenvuart, other serial ports are supported.
