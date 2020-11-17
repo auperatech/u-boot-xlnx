@@ -89,7 +89,9 @@ void main_loop(void)
 	run_command("if test ${aup_module_type} = XU30; then setenv aup_imgsize 0x6fe0000; else setenv aup_imgsize 0x2fe0000; fi;", 0);
 	run_command("setenv aup_sdboot   \"mmc dev 1 && mmcinfo && load mmc 1:1 ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 #ifdef CONFIG_CMD_AUP_IMG_INFO
-	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:$\"{aup_rootfselect}\" ${aup_imgaddr} ${aup_imgname} && getimginfo ${aup_imgaddr} fdt@1 aup_fdt1addr aup_fdt1len && echo aup_fdt1addr=$\"{aup_fdt1addr}\" && cp $\"{aup_fdt1addr}\" ${fdt_addr} 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then echo 'V205B? dts 2'; bootm ${aup_imgaddr}#conf@2; else echo 'V205A? dts 1'; bootm ${aup_imgaddr}#conf@1; fi \"", 0);
+//	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:$\"{aup_rootfselect}\" ${aup_imgaddr} ${aup_imgname} && getimginfo ${aup_imgaddr} fdt@1 aup_fdt1addr aup_fdt1len && echo aup_fdt1addr=$\"{aup_fdt1addr}\" && cp $\"{aup_fdt1addr}\" ${fdt_addr} 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then echo 'V205B? dts 2'; bootm ${aup_imgaddr}#conf@2; else echo 'V205A? dts 1'; bootm ${aup_imgaddr}#conf@1; fi \"", 0);
+//	run_command("setenv aup_emmcboot \"echo 'fixme: 2020.1 use emmcboot'; mmc dev 0 && mmcinfo && load mmc 0:$\"{aup_rootfselect}\" ${aup_imgaddr} ${aup_imgname} && setenv bootargs \"earlycon console=ttyPS0,115200 clk_ignore_unused root=/dev/mmcblk0p$\"{aup_rootfselect}\" rw rootwait\"; if test ${aup_module_type} = V205B2; then bootm ${aup_imgaddr}#conf@2; else bootm ${aup_imgaddr}#conf@1; fi\"", 0);
+	run_command("setenv aup_emmcboot \"echo 'fixme: 2020.1 use emmcboot'; mmc dev 0 && mmcinfo && load mmc 0:$\"{aup_rootfselect}\" ${aup_imgaddr} ${aup_imgname} && setenv bootargs \"earlycon console=ttyPS0,115200 clk_ignore_unused root=/dev/mmcblk0p$\"{aup_rootfselect}\" rw rootwait\"; bootm ${aup_imgaddr}\"", 0);
 #else
 	run_command("setenv aup_emmcboot \"mmc dev 0 && mmcinfo && load mmc 0:$\"{aup_rootfselect}\" ${aup_imgaddr} ${aup_imgname} && cp 0x11143bfc $fdt_addr 0x100000 && fdt addr $fdt_addr && fdt get value bootargs /chosen bootargs; if test ${aup_rootfselect} = 3; then setexpr bootargs sub 'root=/dev/mmcblk0p2' 'root=/dev/mmcblk0p3'; fi; if test ${aup_module_type} = V205B2; then bootm ${aup_imgaddr}#conf@2; else bootm ${aup_imgaddr}#conf@1; fi \"", 0);
 #endif
@@ -100,6 +102,7 @@ void main_loop(void)
 	run_command("setenv aup_tftpboot \"setenv ethact eth0 && setenv serverip 192.168.1.254 && setenv ipaddr 192.168.1.250 && tftpboot ${aup_imgaddr} ${aup_imgname} && bootm ${aup_imgaddr}\"", 0);
 	run_command("setenv aup_boottry \"for target in  qspi sd emmc usb tftp; do run aup_${target}boot; done\"", 0);
 	run_command("setenv bootcmd \"run aup_${modeboot}\"", 0);
+
 	//sdbootdev=0 or 1
 	//run_command("if test \"${modeboot}\" = \"sdboot\"; then setenv sdboot \"mmc dev 1 && mmcinfo && load mmc 1:1 0x10000000 image.ub && bootm 0x10000000\"; fi;", 0);
 //#endif
