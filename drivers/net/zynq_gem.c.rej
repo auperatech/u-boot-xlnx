@@ -1,0 +1,21 @@
+--- drivers/net/zynq_gem.c
++++ drivers/net/zynq_gem.c
+@@ -841,6 +914,18 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
+ 		priv->mdiobase = (struct zynq_gem_regs *)addr;
+ 	} else {
+ 		priv->mdiobase = priv->iobase;
++		/**zzz++ for linux kernel fixed-link　syntax*/
++		u32 cell[5] = {0};	/**example: fixed-link = <3 1 1000 0 0>;*/
++		int err;
++
++		err = dev_read_u32_array(dev, "fixed-link", cell, ARRAY_SIZE(cell));
++		if (! err){
++			printf("!no found phy-handle, %s is a fixed-link speed %d\n", dev->name, cell[2]);
++			//priv->phyaddr = cell[1];
++			priv->phyaddr = PHY_MAX_ADDR + 1;	//as a fixed link flag, no phy addr will be this, in real world
++			//priv->phy_of_node = NULL;
++			priv->max_speed = SPEED_1000;
++		}
+ 	}
+ 
+ 	phy_mode = dev_read_prop(dev, "phy-mode", NULL);

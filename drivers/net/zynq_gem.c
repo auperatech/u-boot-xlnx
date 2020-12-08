@@ -262,6 +262,46 @@ static int phywrite(struct zynq_gem_priv *priv, u32 phy_addr,
 			    ZYNQ_GEM_PHYMNTNC_OP_W_MASK, &data);
 }
 
+/**for aupv205*/
+static int phy_detection(struct udevice *dev)
+{
+	int i;
+	u16 phyreg = 0;
+	struct zynq_gem_priv *priv = dev->priv;
+
+	if (priv->phyaddr != -1) {
+		phyread(priv, priv->phyaddr, PHY_DETECT_REG, &phyreg);
+		if ((phyreg != 0xFFFF) &&
+		    ((phyreg & PHY_DETECT_MASK) == PHY_DETECT_MASK)) {
+			/* Found a valid PHY address */
+			debug("Default phy address %d is valid\n",
+			      priv->phyaddr);
+			return 0;
+		} else {
+			debug("PHY address is not setup correctly %d\n",
+			      priv->phyaddr);
+			priv->phyaddr = -1;
+		}
+	}
+
+	debug("detecting phy address\n");
+	if (priv->phyaddr == -1) {
+		/* detect the PHY address */
+		for (i = 31; i >= 0; i--) {
+			phyread(priv, i, PHY_DETECT_REG, &phyreg);
+			if ((phyreg != 0xFFFF) &&
+			    ((phyreg & PHY_DETECT_MASK) == PHY_DETECT_MASK)) {
+				/* Found a valid PHY address */
+				priv->phyaddr = i;
+				debug("Found valid phy address, %d\n", i);
+				return 0;
+			}
+		}
+	}
+	printf("PHY is not detected\n");
+	return -1;
+}
+
 static int zynq_gem_setup_mac(struct udevice *dev)
 {
 	u32 i, macaddrlow, macaddrhigh;
@@ -306,6 +346,16 @@ static int zynq_phy_init(struct udevice *dev)
 
 	/* Enable only MDIO bus */
 	writel(ZYNQ_GEM_NWCTRL_MDEN_MASK, &regs_mdio->nwctrl);
+
+	/**aupv205 add phy_detection*/
+	if ((priv->interface != PHY_INTERFACE_MODE_SGMII) &&
+	    (priv->interface != PHY_INTERFACE_MODE_GMII)) {
+		ret = phy_detection(dev);
+		if (ret) {
+			printf("GEM PHY init failed\n");
+			return ret;
+		}
+	}
 
 	priv->phydev = phy_connect(priv->bus, priv->phyaddr, dev,
 				   priv->interface);
@@ -426,6 +476,7 @@ static int zynq_gem_init(struct udevice *dev)
 		priv->init++;
 	}
 
+	if (priv->phyaddr != PHY_MAX_ADDR + 1){		//for aupv205 it is not a fixed-link
 	ret = phy_startup(priv->phydev);
 	if (ret)
 		return ret;
@@ -434,6 +485,7 @@ static int zynq_gem_init(struct udevice *dev)
 		printf("%s: No link.\n", priv->phydev->dev->name);
 		return -1;
 	}
+	}
 
 	nwconfig = ZYNQ_GEM_NWCFG_INIT;
 
@@ -441,6 +493,8 @@ static int zynq_gem_init(struct udevice *dev)
 	 * Set SGMII enable PCS selection only if internal PCS/PMA
 	 * core is used and interface is SGMII.
 	 */
+	printf("zynq_gem priv: interface=%d, int_pcs=%d, phyaddr=%d, link=%d, autoneg=%d, speed=%d, duplex=%d\n", priv->interface, priv->int_pcs, priv->phyaddr, priv->phydev->link, priv->phydev->autoneg, priv->phydev->speed, priv->phydev->duplex);
+
 	if (priv->interface == PHY_INTERFACE_MODE_SGMII &&
 	    priv->int_pcs) {
 		nwconfig |= ZYNQ_GEM_NWCFG_SGMII_ENBL |
@@ -454,7 +508,11 @@ static int zynq_gem_init(struct udevice *dev)
 		       &regs->pcscntrl);
 #endif
 	}
-
+	if (priv->phyaddr == PHY_MAX_ADDR + 1){		//for aupv205, it is not a fixed-link
+		writel(nwconfig | ZYNQ_GEM_NWCFG_SPEED1000,
+		       &regs->nwcfg);
+		clk_rate = ZYNQ_GEM_FREQUENCY_1000;
+	}else{
 	switch (priv->phydev->speed) {
 	case SPEED_1000:
 		writel(nwconfig | ZYNQ_GEM_NWCFG_SPEED1000,
@@ -471,6 +529,20 @@ static int zynq_gem_init(struct udevice *dev)
 		break;
 	}
 
+	 if(priv->phydev->drv->uid==0x088e6185)	//for 88e6185
+	 {
+		priv->phydev->flags |= BIT(4);//switch Set Fix link.
+		ret = phy_startup(priv->phydev);
+		priv->phydev->flags &= ~BIT(4);
+		if (ret)
+			return ret;
+
+		if (!priv->phydev->link) {
+			printf("%s: No link.\n", priv->phydev->dev->name);
+			return -1;
+		}
+	 }
+	}
 	ret = clk_set_rate(&priv->clk, clk_rate);
 	if (IS_ERR_VALUE(ret) && ret != (unsigned long)-ENOSYS) {
 		dev_err(dev, "failed to set tx clock rate\n");
@@ -744,6 +816,7 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 	struct zynq_gem_priv *priv = dev_get_priv(dev);
 	struct ofnode_phandle_args phandle_args;
 	const char *phy_mode;
+	int ret, gpio_phy_hw_rst;
 
 	pdata->iobase = (phys_addr_t)dev_read_addr(dev);
 	priv->iobase = (struct zynq_gem_regs *)pdata->iobase;
@@ -770,6 +843,20 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 			debug("MDIO bus not found %s\n", dev->name);
 			priv->mdiobase = (struct zynq_gem_regs *)addr;
 		}
+	} else {
+		priv->mdiobase = priv->iobase;
+		/**zzz++ for linux kernel fixed-link　syntax*/
+		u32 cell[5] = {0};	/**example: fixed-link = <3 1 1000 0 0>;*/
+		int err;
+
+		err = dev_read_u32_array(dev, "fixed-link", cell, ARRAY_SIZE(cell));
+		if (! err){
+			printf("!no found phy-handle, %s is a fixed-link speed %d\n", dev->name, cell[2]);
+			//priv->phyaddr = cell[1];
+			priv->phyaddr = PHY_MAX_ADDR + 1;	//as a fixed link flag, no phy addr will be this, in real world
+			//priv->phy_of_node = NULL;
+			priv->max_speed = SPEED_1000;
+		}
 	}
 
 	phy_mode = dev_read_prop(dev, "phy-mode", NULL);
@@ -783,10 +870,30 @@ static int zynq_gem_ofdata_to_platdata(struct udevice *dev)
 
 	priv->int_pcs = dev_read_bool(dev, "is-internal-pcspma");
 
-	printf("\nZYNQ GEM: %lx, mdio bus %lx, phyaddr %d, interface %s\n",
+	printf("\nZYNQ GEM: %lx, mdio bus %lx, phyaddr %d, interface %s, max_speed %d, int_pcs %d\n",
 	       (ulong)priv->iobase, (ulong)priv->mdiobase, priv->phyaddr,
-	       phy_string_for_interface(priv->interface));
+	       phy_string_for_interface(priv->interface), priv->max_speed, priv->int_pcs);
+#ifdef	CONFIG_V205_HW_RST_PHY
+	gpio_phy_hw_rst = 72;
+	/* grab the pin before we tweak it */
+	ret = gpio_request(gpio_phy_hw_rst, "cmd_gpio");
+	if (ret && ret != -EBUSY) {
+		printf("gpio: requesting pin %u failed\n", gpio_phy_hw_rst);
+		return -1;
+	}
 
+	/** use gpio 72 reset 88e6185 or 88e1112, output 0=reset, 1=run,
+		88e1112 have a reset-chip with 250ms reset delay, we will use dts to get gpio later */
+	static bool phy_hw_reseted = false;
+	if (! phy_hw_reseted){
+		gpio_direction_output(gpio_phy_hw_rst, 0);
+		udelay(100*1000);        //100ms
+		gpio_direction_output(gpio_phy_hw_rst, 1);
+		udelay(400*1000);       //400ms for reset-chip delay
+		printf("hardware gpio %d reset phy!\n", gpio_phy_hw_rst);
+		phy_hw_reseted = true;
+	}
+#endif
 	return 0;
 }
 

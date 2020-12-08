@@ -90,6 +90,7 @@ obj-$(CONFIG_CMD_MEMORY) += mem.o
 obj-$(CONFIG_CMD_IO) += io.o
 obj-$(CONFIG_CMD_MFSL) += mfsl.o
 obj-$(CONFIG_CMD_MII) += mii.o
+obj-$(CONFIG_CMD_AUP_MII) += aup_mii.o
 obj-$(CONFIG_CMD_MDIO) += mdio.o
 obj-$(CONFIG_CMD_MISC) += misc.o
 obj-$(CONFIG_CMD_MMC) += mmc.o
@@ -161,6 +162,18 @@ obj-$(CONFIG_CMD_SPL) += spl.o
 obj-$(CONFIG_CMD_W1) += w1.o
 obj-$(CONFIG_CMD_ZIP) += zip.o
 obj-$(CONFIG_CMD_ZFS) += zfs.o
+
+#setenv from ram
+obj-$(CONFIG_CMD_AUP_RAM_ENV) += setenvram.o
+
+#setenv from uart
+obj-$(CONFIG_CMD_AUP_UART_ENV) += setenvuart.o
+
+#getimage info from ram
+obj-$(CONFIG_CMD_AUP_IMG_INFO) += getimginfo.o
+
+#get node boot client info from eth
+obj-$(CONFIG_CMD_AUP_NODE_BOOT_CLIENT) += nodebootclient.o
 
 obj-$(CONFIG_CMD_DFU) += dfu.o
 obj-$(CONFIG_CMD_GPT) += gpt.o

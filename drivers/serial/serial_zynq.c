@@ -233,3 +233,127 @@ static inline void _debug_uart_putc(int ch)
 DEBUG_UART_FUNCS
 
 #endif
+
+#ifdef CONFIG_CMD_AUP_UART_ENV
+static inline int _zynq_uartx_conf(unsigned int portnum,unsigned int baudrate)
+{
+	struct uart_zynq *regs_uart;
+
+	if(portnum>1)
+		return -EAGAIN;
+
+	if( (baudrate!=9600) &&
+	    (baudrate!=19200) &&
+	    (baudrate!=38400) &&
+	    (baudrate!=57600) &&
+	    (baudrate!=115200)
+	  )
+	{
+		baudrate=CONFIG_BAUDRATE;
+	}
+
+	regs_uart = (struct uart_zynq *)((char *)CONFIG_DEBUG_UART_BASE+portnum*0x10000);
+
+	_uart_zynq_serial_init(regs_uart);
+	_uart_zynq_serial_setbrg(regs_uart, CONFIG_DEBUG_UART_CLOCK,
+				 baudrate);
+
+	return 0;
+}
+
+static inline int _zynq_uartx_putc(unsigned int portnum,char ch)
+{
+	struct uart_zynq *regs_uart;
+
+	if(portnum>1)
+		return -EAGAIN;
+
+	regs_uart = (struct uart_zynq *)((char *)CONFIG_DEBUG_UART_BASE+portnum*0x10000);
+
+	while (_uart_zynq_serial_putc(regs_uart, ch) == -EAGAIN)
+	{
+		WATCHDOG_RESET();
+		return 0;
+	}
+
+	return 1;
+}
+
+static inline int _zynq_uartx_getc(unsigned int portnum)
+{
+	struct uart_zynq *regs_uart;
+
+	if(portnum>1)
+		return -EAGAIN;
+
+	regs_uart = (struct uart_zynq *)((char *)CONFIG_DEBUG_UART_BASE+portnum*0x10000);
+
+	if (readl(&regs_uart->channel_sts) & ZYNQ_UART_SR_RXEMPTY)
+		return -EAGAIN;
+
+	return readl(&regs_uart->tx_rx_fifo);
+}
+
+static inline int _zynq_uartx_read(unsigned int portnum,char *buff,int size)
+{
+	int getc=0;
+	int realsize=0;
+	int timeout=0;
+
+	if(!buff || !size)
+	{
+		return 0;
+	}
+
+	while(size)
+	{
+		getc=_zynq_uartx_getc(portnum);
+
+		if(getc==-EAGAIN)
+		{
+			if(timeout>100)//max timeout 100ms.
+			{
+				break;
+			}
+			else
+			{
+				timeout++;
+				udelay(1000);
+				continue;
+			}
+		}
+
+		*buff++=(char)getc;
+		size--;
+		realsize++;
+	}
+
+	return realsize;
+}
+
+static inline int _zynq_uartx_write(unsigned int portnum,const char *buff,unsigned int size)
+{
+	int i=0;
+	int realsize=0;
+
+	if(!buff)
+	{
+		return 0;
+	}
+
+	i=0;
+	realsize=0;
+	while (i<size)
+	{
+		if(_zynq_uartx_putc(portnum,*buff++))
+		{
+			realsize++;
+		}
+		i++;
+	}
+
+	return realsize;
+}
+
+AUP_UART_FUNCS
+#endif	//#ifdef CONFIG_CMD_AUP_UART_ENV

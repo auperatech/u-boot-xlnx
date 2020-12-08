@@ -404,6 +404,8 @@ static int zynqmp_qspi_set_speed(struct udevice *bus, uint speed)
 	if (speed > plat->frequency)
 		speed = plat->frequency;
 
+	speed=plat->speed_hz;//Fix QSPI flash max speed.Add by Derrick on 20200225.
+
 	/* Set the clock frequency */
 	confr = readl(&regs->confr);
 	if (speed == 0) {
