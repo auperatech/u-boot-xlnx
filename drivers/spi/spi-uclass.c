@@ -15,7 +15,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define SPI_DEFAULT_SPEED_HZ 100000
+#define SPI_DEFAULT_SPEED_HZ 10000000	/*set default from 100Khz to 10Mhz*/
 
 static int spi_set_speed_mode(struct udevice *bus, int speed, int mode)
 {
@@ -351,10 +351,10 @@ int spi_get_bus_and_cs(int busnum, int cs, int speed, int mode,
 			plat->max_hz = SPI_DEFAULT_SPEED_HZ;
 		}
 
-		if(!mode)//Force QSPI 4bit mode read,Add by Derrick on 20200226
+		if(!mode)//Force QSPI 2bit mode read for U30
 		{
-			mode = SPI_RX_QUAD;
-			printf("[%s] Force QSPI rx 4 bit mode.\r\n", __FUNCTION__);
+			mode = SPI_RX_DUAL;	//QUAD;
+			printf("[%s] Force QSPI rx 2 bit mode.\r\n", __FUNCTION__);
 		}
 
 		plat->mode = mode;
