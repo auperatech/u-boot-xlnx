@@ -97,6 +97,7 @@ int do_getimginfo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	get_img_info_t get_image_info;
 	char image_addr[19];
 	char image_len[19];
+	int image_format=0;
 	int ret=1;
 
 	if ( argc < 4 )
@@ -114,8 +115,8 @@ int do_getimginfo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 	strcpy(get_image_info.name,argv[2]);
-
- 	if( genimg_get_format(addr) == IMAGE_FORMAT_FIT )
+	image_format = genimg_get_format(addr);
+ 	if( image_format == IMAGE_FORMAT_FIT )
 	{
 		if (!fit_check_format(addr))
 		{
@@ -141,11 +142,13 @@ int do_getimginfo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			}
 
 			ret = 0;
+		}else{
+			printf("get_image_info.active=%d\n",get_image_info.active);
 		}
 	}
 	else
 	{
-		printf("Image format is not IMAGE_FORMAT_FIT!\n");
+		printf("Image format is %d, not IMAGE_FORMAT_FIT!\n", image_format);
 	}
 
 	return ret;
