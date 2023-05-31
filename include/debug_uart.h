@@ -198,7 +198,7 @@ int uartx_read(unsigned int portnum,char *buff, unsigned int size);
 \
 	void debug_uart_init(void) \
 	{ \
-		board_debug_uart_init(); \
+		/*board_debug_uart_init();*/ \
 		_debug_uart_init(); \
 		_DEBUG_UART_ANNOUNCE \
 	}
